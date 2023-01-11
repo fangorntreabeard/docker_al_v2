@@ -1,0 +1,15 @@
+version: '3'
+services:
+  ml_service:
+    restart: always
+    image: ml_od_cpu
+    build:
+      context: .
+      dockerfile: Dockerfile_cpu
+    volumes:
+      - /home/neptun/PycharmProjects/datasets/:/datasets
+    ports:
+      - "5000:5000"
+networks:
+  default:
+    driver: bridge
