@@ -33,26 +33,36 @@ def make_file(N):
             copy_row['segmentation'] = []
             new_annotation.append(copy_row)
 
-    images_ids = []
+    good_images_ids = []
     for row in new_annotation:
-        images_ids.append(row['image_id'])
-    images_ids = list(set(images_ids))
+        good_images_ids.append(row['image_id'])
+    good_images_ids = list(set(good_images_ids))
+
+    empty_images_ids = list(set(all_photo) - set(good_images_ids))
+    empty_images_ids = random.sample(empty_images_ids, k=len(good_images_ids))
 
     new_image = []
-    a = []
+
     for row in images:
-        if row['id'] in images_ids:
-            a.append(row['id'])
+        if row['id'] in good_images_ids or row['id'] in empty_images_ids:
             copy_row = copy.deepcopy(row)
             new_image.append(copy_row)
 
-    end_annot = []
-    for row in new_annotation:
-        if row['image_id'] in a:
-            end_annot.append(copy.deepcopy(row))
+    # new_image = []
+    # a = []
+    # for row in images:
+    #     if row['id'] in images_ids:
+    #         a.append(row['id'])
+    #         copy_row = copy.deepcopy(row)
+    #         new_image.append(copy_row)
 
-    new_razmetka = dict(annotations=end_annot, images=new_image,
+    # end_annot = []
+    # for row in new_annotation:
+    #     if row['image_id'] in a:
+    #         end_annot.append(copy.deepcopy(row))
+
+    new_razmetka = dict(annotations=new_annotation, images=new_image,
                         categories=categories, info=info, licenses=licenses)
 
-    with open(os.path.join(path_to_dataset, 'labelstrain', 'first.json'), 'w') as f:
+    with open(os.path.join(path_to_dataset, 'for_al', 'first.json'), 'w') as f:
         f.write(json.dumps(new_razmetka))

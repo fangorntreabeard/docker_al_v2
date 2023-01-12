@@ -1,7 +1,7 @@
 import os
 
 import torch
-
+import json
 import random
 import yaml
 from torch.utils.data import DataLoader
@@ -15,8 +15,9 @@ import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.faster_rcnn import GeneralizedRCNNTransform
 
+with open('../detection/setting.yaml') as f:
 # with open('setting.yaml') as f:
-with open('scripts/detection/setting.yaml') as f:
+# with open('scripts/detection/setting.yaml') as f:
     templates = yaml.safe_load(f)
 
 
@@ -59,7 +60,7 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
     with torch.no_grad():
         model.eval()
         dataset_train = Dataset_objdetect(pathtoimg, unlabeled_data, annotations=None, transforms=get_transform())
-        train_dataloader = DataLoader(dataset_train, batch_size=16, shuffle=False, collate_fn=utils.collate_fn)
+        train_dataloader = DataLoader(dataset_train, batch_size=32, shuffle=False, collate_fn=utils.collate_fn)
         indexs = []
         values = []
         for images, _, indx in train_dataloader:
@@ -81,19 +82,25 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
             indexs += [x for x in indx]
             values += confidence
 
-    out_name = []
-    alfa = 0.8
-    temp = sorted(values)[-int(add * alfa): ]
-    for ell in temp:
-        indx = values.index(ell)
-        out_name.append(indexs[indx])
+    # out_name = []
+    out_dict = {k: v for k, v in zip(indexs, values)}
+    a = sorted(out_dict.items(), key=lambda x: x[1])
 
-    temp = sorted(values)[ :-int(add * alfa)]
-    temp = random.sample(temp, k=int(add * (1 - alfa)))
-    for ell in temp:
-        indx = values.index(ell)
-        out_name.append(indexs[indx])
-    return [unlabeled_data[i] for i in out_name]
+    temp = a[-add:]
+    out_name = [unlabeled_data[k] for k, v in temp]
+    return sorted(out_name)
+    # alfa = 0.8
+    # temp = sorted(values)[-int(add * alfa): ]
+    # for ell in temp:
+    #     indx = values.index(ell)
+    #     out_name.append(indexs[indx])
+    #
+    # temp = sorted(values)[ :-int(add * alfa)]
+    # temp = random.sample(temp, k=int(add * (1 - alfa)))
+    # for ell in temp:
+    #     indx = values.index(ell)
+    #     out_name.append(indexs[indx])
+    # return [unlabeled_data[i] for i in out_name]
 
 
 def train_api(pathtoimg, pathtolabels, add, device_rest):
@@ -107,6 +114,7 @@ def train_api(pathtoimg, pathtolabels, add, device_rest):
 
     model0 = train_model(pathtoimg, images, annotations, device, num_epochs=templates['n_epoch'])
     unlabeled_data = list(set(all_img) - set([x[0] for x in images]))
+    # unlabeled_data = random.sample(unlabeled_data, k=30_000)
 
     add_to_label_items = sampling_uncertainty(model0, pathtoimg, unlabeled_data, add, device)
 
