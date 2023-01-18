@@ -16,9 +16,9 @@ import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.faster_rcnn import GeneralizedRCNNTransform
 
-with open('../detection/setting.yaml') as f:
+# with open('../detection/setting.yaml') as f:
 # with open('setting.yaml') as f:
-# with open('scripts/detection/setting.yaml') as f:
+with open('scripts/detection/setting.yaml') as f:
     templates = yaml.safe_load(f)
 
 
@@ -41,11 +41,11 @@ def train_model(pathtoimg, images, annotations, device, num_epochs=5):
     optimizer = torch.optim.Adam(params, lr=1e-4)
     for epoch in range(num_epochs):
         train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=100)
-        outval = mAP(model)
-        mape = outval['mAP(0.5:0.95)']
-        if best_mape < mape:
-            best_mape = mape
-            best_model = copy.deepcopy(model)
+        # outval = mAP(model)
+        # mape = outval['mAP(0.5:0.95)']
+        # if best_mape < mape:
+        #     best_mape = mape
+        best_model = copy.deepcopy(model)
 
     return best_model
 
@@ -114,7 +114,7 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
     return sorted(out_name)
 
 
-def train_api(pathtoimg, pathtolabels, add, device_rest, model):
+def train_api(pathtoimg, pathtolabels, add, device_rest, model=None):
     if device_rest == 'gpu':
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
     else:
@@ -127,7 +127,7 @@ def train_api(pathtoimg, pathtolabels, add, device_rest, model):
     else:
         model0 = model
     unlabeled_data = list(set(all_img) - set([x[0] for x in images]))
-    unlabeled_data = random.sample(unlabeled_data, k=25_000)
+    unlabeled_data = random.sample(unlabeled_data, k=5000)
 
     add_to_label_items = sampling_uncertainty(model0, pathtoimg, unlabeled_data, add, device)
 
