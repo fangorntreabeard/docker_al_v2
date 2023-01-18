@@ -175,29 +175,29 @@ class MetricLogger:
             if i % print_freq == 0 or i == len(iterable) - 1:
                 eta_seconds = iter_time.global_avg * (len(iterable) - i)
                 eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
-                if torch.cuda.is_available():
-                    print(
-                        log_msg.format(
-                            i,
-                            len(iterable),
-                            eta=eta_string,
-                            meters=str(self),
-                            time=str(iter_time),
-                            data=str(data_time),
-                            memory=torch.cuda.max_memory_allocated() / MB,
-                        )
-                    )
-                else:
-                    print(
-                        log_msg.format(
-                            i, len(iterable), eta=eta_string, meters=str(self), time=str(iter_time), data=str(data_time)
-                        )
-                    )
+                # if torch.cuda.is_available():
+                #     print(
+                #         log_msg.format(
+                #             i,
+                #             len(iterable),
+                #             eta=eta_string,
+                #             meters=str(self),
+                #             time=str(iter_time),
+                #             data=str(data_time),
+                #             memory=torch.cuda.max_memory_allocated() / MB,
+                #         )
+                #     )
+                # else:
+                #     print(
+                #         log_msg.format(
+                #             i, len(iterable), eta=eta_string, meters=str(self), time=str(iter_time), data=str(data_time)
+                #         )
+                #     )
             i += 1
             end = time.time()
         total_time = time.time() - start_time
         total_time_str = str(datetime.timedelta(seconds=int(total_time)))
-        print(f"{header} Total time: {total_time_str} ({total_time / len(iterable):.4f} s / it)")
+        # print(f"{header} Total time: {total_time_str} ({total_time / len(iterable):.4f} s / it)")
 
 
 def collate_fn(batch):

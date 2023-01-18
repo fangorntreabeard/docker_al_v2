@@ -5,7 +5,7 @@ import random
 
 
 def write_json(list_files, m):
-    full_train_json = '/home/neptun/PycharmProjects/datasets/coco/instances_train2017.json'
+    full_train_json = '/home/alex/PycharmProjects/dataset/coco/instances_train2017.json'
     current_label = 17  # cat
 
     with open(full_train_json) as f:
@@ -36,11 +36,13 @@ def write_json(list_files, m):
     for row in new_annotation:
         b.append(row['image_id'])
 
+    print('file {}, {} / {}'.format(m, len(b), len(list_files)))
+
     c = list(set(list_files) - set(b))
-    c = random.sample(c, k=len(b))
+    c = random.sample(c, k=min(3*len(b), len(c)))
     new_image2 = []
     for row in images:
-        if row['id'] in b or row['id'] in c:
+        if row['id'] in b:
             copy_row = copy.deepcopy(row)
             new_image2.append(copy_row)
 
@@ -48,7 +50,7 @@ def write_json(list_files, m):
     new_razmetka = dict(annotations=new_annotation, images=new_image2,
                         categories=categories, info=info, licenses=licenses)
 
-    with open(os.path.join('/home/neptun/PycharmProjects/datasets/coco/for_al', f'{m}.json'), 'w') as f:
+    with open(os.path.join('/home/alex/PycharmProjects/dataset/coco/for_al', f'{m}.json'), 'w') as f:
         f.write(json.dumps(new_razmetka))
 
 if __name__ == '__main__':

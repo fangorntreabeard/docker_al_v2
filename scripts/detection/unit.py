@@ -89,10 +89,12 @@ class Dataset_objdetect(Dataset):
                 transformed_image = transformed['image']
                 # num_objs = random.randint(1, 3)
                 num_objs = 1
-                bbb = np.random.randint(1, 110, (num_objs, 4))
-                bbb[:, 2] = bbb[:, 0] + bbb[:, 2]
-                bbb[:, 3] = bbb[:, 1] + bbb[:, 3]
+                # bbb = np.random.randint(1, 110, (num_objs, 4))
+                # bbb[:, 2] = bbb[:, 0] + bbb[:, 2]
+                # bbb[:, 3] = bbb[:, 1] + bbb[:, 3]
+                bbb = [[0, 0, 1, 1]]
                 boxes = torch.as_tensor(bbb, dtype=torch.float32)
+                # boxes = torch.zeros((num_objs, 4), dtype=torch.float32)
                 labels = torch.zeros((num_objs,), dtype=torch.int64)
 
             area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])

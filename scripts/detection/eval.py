@@ -6,28 +6,37 @@ import scripts.detection.utils as utils
 from torchvision import transforms as t
 import torch
 import numpy as np
+import yaml
+with open('../detection/setting.yaml') as f:
+# with open('setting.yaml') as f:
+# with open('scripts/detection/setting.yaml') as f:
+    templates = yaml.safe_load(f)
 
 def get_transform():
     transforms = [t.ToTensor()]
     return t.Compose(transforms)
 
 
-def eval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_img_val, device_rest):
+def eval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_img_val, device_rest, model=None):
 
     if device_rest == 'gpu':
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
     else:
         device = "cpu"
 
-    images_train, annotations_train = prepare_items_od(path_to_img_train, path_to_labels_train)
-    model0 = train_model(path_to_img_train, images_train, annotations_train, device, num_epochs=10)
+    if model is None:
+        images_train, annotations_train = prepare_items_od(path_to_img_train, path_to_labels_train)
+        model0 = train_model(path_to_img_train, images_train, annotations_train, device,
+                             num_epochs=templates['n_epoch'])
+    else:
+        model0 = model
 
     images_test, annotations_test = prepare_items_od(path_to_img_val, path_to_labels_val)
     dataset_test = Dataset_objdetect(path_to_img_val, images_test, annotations_test, get_transform())
     data_loader_test = DataLoader(dataset_test, batch_size=32, shuffle=False, collate_fn=utils.collate_fn)
 
     coco_evaluator = evaluate(model0, data_loader_test, device=device)
-    return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox'])}
+    return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox']), 'model': model0}
 
 
 def _summarize(coco, ap=1, iouThr=None, areaRng='all', maxDets=100):
