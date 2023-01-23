@@ -7,7 +7,7 @@ import copy
 def make_file(N):
     current_label = 17  #cat
     # N = 1000
-    path_to_dataset = '/home/alex/PycharmProjects/dataset/coco'
+    path_to_dataset = '/home/neptun/PycharmProjects/datasets/coco'
 
     with open(os.path.join(path_to_dataset, 'instances_train2017.json')) as f:
         razmetka = json.load(f)
@@ -40,15 +40,19 @@ def make_file(N):
 
     print('zero file {} / {}'.format(len(good_images_ids), N))
 
-    empty_images_ids = list(set(all_photo) - set(good_images_ids))
-    empty_images_ids = random.sample(empty_images_ids, k=min(3*len(good_images_ids), len(empty_images_ids)))
+    # empty_images_ids = list(set(all_photo) - set(good_images_ids))
+    # empty_images_ids = random.sample(empty_images_ids, k=min(3*len(good_images_ids), len(empty_images_ids)))
 
     new_image = []
 
     for row in images:
-        if row['id'] in good_images_ids:
+        if row['id'] in all_photo:
             copy_row = copy.deepcopy(row)
             new_image.append(copy_row)
+    # for row in images:
+    #     if row['id'] in good_images_ids:
+    #         copy_row = copy.deepcopy(row)
+    #         new_image.append(copy_row)
 
     # new_image = []
     # a = []
@@ -66,8 +70,8 @@ def make_file(N):
     new_razmetka = dict(annotations=new_annotation, images=new_image,
                         categories=categories, info=info, licenses=licenses)
 
-    with open(os.path.join(path_to_dataset, 'for_al', 'first.json'), 'w') as f:
+    with open(os.path.join(path_to_dataset, 'labelstrain', 'first.json'), 'w') as f:
         f.write(json.dumps(new_razmetka))
 
 if __name__ == '__main__':
-    make_file(-1)
+    make_file(10000)

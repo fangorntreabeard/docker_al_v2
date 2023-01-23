@@ -5,7 +5,7 @@ import random
 
 
 def write_json(list_files, m):
-    full_train_json = '/home/alex/PycharmProjects/dataset/coco/instances_train2017.json'
+    full_train_json = '/home/neptun/PycharmProjects/datasets/coco/instances_train2017.json'
     current_label = 17  # cat
 
     with open(full_train_json) as f:
@@ -50,7 +50,7 @@ def write_json(list_files, m):
     new_razmetka = dict(annotations=new_annotation, images=new_image2,
                         categories=categories, info=info, licenses=licenses)
 
-    with open(os.path.join('/home/alex/PycharmProjects/dataset/coco/for_al', f'{m}.json'), 'w') as f:
+    with open(os.path.join('/home/neptun/PycharmProjects/datasets/coco/labelstrain', f'{m}.json'), 'w') as f:
         f.write(json.dumps(new_razmetka))
 
 if __name__ == '__main__':

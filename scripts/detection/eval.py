@@ -7,9 +7,9 @@ from torchvision import transforms as t
 import torch
 import numpy as np
 import yaml
-# with open('../detection/setting.yaml') as f:
+with open('../detection/setting.yaml') as f:
 # with open('setting.yaml') as f:
-with open('scripts/detection/setting.yaml') as f:
+# with open('scripts/detection/setting.yaml') as f:
     templates = yaml.safe_load(f)
 
 def get_transform():
@@ -36,8 +36,8 @@ def eval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_im
     data_loader_test = DataLoader(dataset_test, batch_size=32, shuffle=False, collate_fn=utils.collate_fn)
 
     coco_evaluator = evaluate(model0, data_loader_test, device=device)
-    return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox'])}
-    # return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox']), 'model': model0}
+    # return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox'])}
+    return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox']), 'model': model0}
 
 
 def _summarize(coco, ap=1, iouThr=None, areaRng='all', maxDets=100):

@@ -10,9 +10,9 @@ from skimage import io
 import numpy as np
 
 
-# with open('../detection/setting.yaml') as f:
+with open('../detection/setting.yaml') as f:
 # with open('setting.yaml') as f:
-with open('scripts/detection/setting.yaml') as f:
+# with open('scripts/detection/setting.yaml') as f:
     templates = yaml.safe_load(f)
 
 mean = [0.4914, 0.4822, 0.4465]
@@ -55,7 +55,14 @@ def prepare_items_od(path_to_img, path_to_labels):
 class Dataset_objdetect(Dataset):
     def __init__(self, path_to_img, images, annotations, transforms):
         self.path_to_img = path_to_img
-        self.images = images
+        new_id = []
+        for row in annotations:
+            new_id.append(row[1])
+        new_images = []
+        for row in images:
+            if row[1] in new_id:
+                new_images.append(row)
+        self.images = new_images
         self.annotations = annotations
         self.transforms = transforms
         self.transA = A.Compose([A.Resize(224, 224)], bbox_params=A.BboxParams(format='coco',
