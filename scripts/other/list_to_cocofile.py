@@ -38,11 +38,12 @@ def write_json(list_files, m):
 
     print('file {}, {} / {}'.format(m, len(b), len(list_files)))
 
-    c = list(set(list_files) - set(b))
-    c = random.sample(c, k=min(3*len(b), len(c)))
+    # c = list(set(list_files) - set(b))
+    # c = random.sample(c, k=min(3*len(b), len(c)))
     new_image2 = []
     for row in images:
-        if row['id'] in b:
+        if row['file_name'] in list_files:
+        # if row['id'] in b:
             copy_row = copy.deepcopy(row)
             new_image2.append(copy_row)
 

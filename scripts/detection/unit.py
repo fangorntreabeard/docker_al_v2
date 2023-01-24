@@ -55,14 +55,18 @@ def prepare_items_od(path_to_img, path_to_labels):
 class Dataset_objdetect(Dataset):
     def __init__(self, path_to_img, images, annotations, transforms):
         self.path_to_img = path_to_img
-        new_id = []
-        for row in annotations:
-            new_id.append(row[1])
-        new_images = []
-        for row in images:
-            if row[1] in new_id:
-                new_images.append(row)
-        self.images = new_images
+        if not annotations is None:
+            new_id = []
+            for row in annotations:
+                new_id.append(row[1])
+            new_images = []
+            for row in images:
+                if row[1] in new_id:
+                    new_images.append(row)
+            self.images = new_images
+        else:
+            self.images = images
+
         self.annotations = annotations
         self.transforms = transforms
         self.transA = A.Compose([A.Resize(224, 224)], bbox_params=A.BboxParams(format='coco',

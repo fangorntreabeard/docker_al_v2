@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms as t
 from scripts.detection.engine import train_one_epoch
 from scripts.detection.vae import train_vae_od, find_loss_vae, plot_err_vae
+from scripts.detection.classification import classification
 # from scripts.detection.eval import eval
 from scripts.detection.unit import Dataset_objdetect, prepare_items_od
 import copy
@@ -18,6 +19,7 @@ import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.faster_rcnn import GeneralizedRCNNTransform
 from PIL import Image
+import re
 
 
 with open('../detection/setting.yaml') as f:
@@ -45,10 +47,10 @@ def train_model(pathtoimg, images, annotations, device, num_epochs=5):
     optimizer = torch.optim.Adam(params, lr=1e-4)
     for epoch in range(num_epochs):
         train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=100)
-        # outval = mAP(model)
-        # mape = outval['mAP(0.5:0.95)']
-        # if best_mape < mape:
-        #     best_mape = mape
+        outval = mAP(model)
+        mape = outval['mAP(0.5:0.95)']
+        if best_mape < mape:
+            best_mape = mape
         best_model = copy.deepcopy(model)
 
     return best_model
@@ -111,8 +113,9 @@ def save_bbox_disk(bbox, pathtoimg, path_to_boxes, unlabeled_data):
         for j, bb in enumerate(bbox[i]):
             if len(bb) > 0:
                 bb = [int(x) for x in bb]
-                if (bb[2] > bb[0] and bb[3] > bb[1]) and (0.2 < (bb[2] - bb[0])/(bb[3] - bb[1]) < 5) and \
-                    ((bb[2] - bb[0] > 20) or (bb[3] - bb[1] > 20)):
+                if (bb[2] > bb[0] and bb[3] > bb[1]) and \
+                        (0.2 < (bb[2] - bb[0])/(bb[3] - bb[1]) < 5) and \
+                        ((bb[2] - bb[0] > 20) or (bb[3] - bb[1] > 20)):
                     d = img[bb[1]:bb[3], bb[0]:bb[2]]
                     imgs = Image.fromarray(d)
                     imgs.save(os.path.join(path_to_boxes, '{}_{}.jpg'.format(name.split('.')[0], j)))
@@ -143,7 +146,7 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
     return sorted(out_name)
 
 
-def train_api(pathtoimg, pathtolabels, path_to_boxes, add, device_rest, model=None):
+def train_api(pathtoimg, pathtolabels, path_to_boxes, path_to_classes, add, device_rest, model=None):
     if device_rest == 'gpu':
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
     else:
@@ -156,36 +159,53 @@ def train_api(pathtoimg, pathtolabels, path_to_boxes, add, device_rest, model=No
     else:
         model0 = model
     unlabeled_data = list(set(all_img) - set([x[0] for x in images]))
-    unlabeled_data = random.sample(unlabeled_data, k=25000)
+    # unlabeled_data = random.sample(unlabeled_data, k=25000)
 
     methode = 'vae'
     if methode == 'uncertainty':
         add_to_label_items = sampling_uncertainty(model0, pathtoimg, unlabeled_data, add, device)
     else:
-        add_to_label_items = []
-        max_epochs = 300
+        # add_to_label_items = []
+        print('классификация картинок')
+        unlabeled_data_new = train_classification_and_predict(device, pathtoimg, path_to_classes,
+                                                           images, annotations, unlabeled_data)
+        if len(unlabeled_data_new) < add:
+            unlabeled_data_new = unlabeled_data_new + random.sample(
+                list(set(unlabeled_data) - set(unlabeled_data_new)), k=4*add)
+
+        print('unlabeled_data {}'.format(len(unlabeled_data_new)))
+        max_epochs = 150
         print('обучение вае')
         model_vae = train_vae_od(device, pathtoimg, images, annotations, max_epochs)
-        print('классификация картинок')
-
         print('детекция боксов')
-        _, _, bbox = find_out_net(model0, device, pathtoimg, unlabeled_data)
+        _, _, bbox = find_out_net(model0, device, pathtoimg, unlabeled_data_new)
         print('сохранение боксов')
-        save_bbox_disk(bbox, pathtoimg, path_to_boxes, unlabeled_data)
+        save_bbox_disk(bbox, pathtoimg, path_to_boxes, unlabeled_data_new)
         print('ошибка вае')
         err_vae = find_loss_vae(model_vae, path_to_boxes)
         print('результат')
-        add_to_label_items = [x for (x, k) in err_vae][:add]
+        err_vae_2 = [('.'.join(re.split('\_[\d]*\.', x)), y) for x, y in err_vae]
+        unic_imgs = list(set([x for x, y in err_vae_2]))
+        new_err = []
+        for unic_imgs in unic_imgs:
+            a = [y for x, y in err_vae_2 if x == unic_imgs]
+            new_err.append((unic_imgs, sum(a)/len(a)))
+        new_err = sorted(new_err, key=lambda x: x[1], reverse=False)
+        if len(new_err) > add:
+            add_to_label_items = [x for (x, k) in new_err][-add:]
+        else:
+            add_to_label_items = new_err + random.sample(
+                list(set(unlabeled_data) - set([x for (x, k) in new_err])), k=add-len(new_err))
         # plot_err_vae(err_vae)
         # print(err_vae[:add])
 
     return {'data': add_to_label_items}
 
 def mAP(model):
-    path_to_labels_train = '/home/alex/PycharmProjects/dataset/coco/labelstrain'
-    path_to_img_train = '/home/alex/PycharmProjects/dataset/coco/train2017'
-    path_to_labels_val = '/home/alex/PycharmProjects/dataset/coco/labelsval'
-    path_to_img_val = '/home/alex/PycharmProjects/dataset/coco/val2017'
+    path_to_labels_train = '/home/neptun/PycharmProjects/datasets/coco/labelstrain'
+    path_to_img_train = '/home/neptun/PycharmProjects/datasets/coco/train2017'
+    path_to_labels_val = '/home/neptun/PycharmProjects/datasets/coco/labelsval'
+    path_to_img_val = '/home/neptun/PycharmProjects/datasets/coco/val2017'
     device_rest = 'gpu'
     return neval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_img_val, device_rest, model)
 
@@ -242,6 +262,9 @@ def _summarize(coco, ap=1, iouThr=None, areaRng='all', maxDets=100):
     # print(iStr.format(titleStr, typeStr, iouStr, areaRng, maxDets, mean_s))
     return mean_s
 
+def train_classification_and_predict(device, pathtoimg, images, path_to_classes, annotations, unlabeled_data):
+    out = classification(device, pathtoimg, images, path_to_classes, annotations, unlabeled_data)
+    return out
 
 if __name__ == '__main__':
     path_to_img = '/home/neptun/PycharmProjects/datasets/coco/train2017'

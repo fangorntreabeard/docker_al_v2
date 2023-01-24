@@ -26,9 +26,10 @@ def al(model=None):
     pathtoimg = '/home/neptun/PycharmProjects/datasets/coco/train2017/'
     pathtolabels = '/home/neptun/PycharmProjects/datasets/coco/labelstrain/'
     path_to_boxes = '/home/neptun/PycharmProjects/datasets/coco/boxes/'
-    add = 1500
+    path_to_classes = '/home/neptun/PycharmProjects/datasets/coco/classification/'
+    add = 1000
     device_rest = 'gpu'
-    return train_api(pathtoimg, pathtolabels, path_to_boxes, add, device_rest, model)
+    return train_api(pathtoimg, pathtolabels, path_to_boxes, path_to_classes, add, device_rest, model)
 
 def mAP():
     # url = 'http://127.0.0.1:5000/eval'
