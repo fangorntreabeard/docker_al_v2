@@ -8,8 +8,8 @@ import yaml
 import random
 import matplotlib.pyplot as plt
 
-# path_yaml = '/scripts/detection/models/vae_celeba.yaml'
-path_yaml = '../detection/models/vae_celeba.yaml'
+path_yaml = 'scripts/detection/models/vae_celeba.yaml'
+# path_yaml = '../detection/models/vae_celeba.yaml'
 
 class Feature_vae:
     def __init__(self, device, path_check, path_yaml):

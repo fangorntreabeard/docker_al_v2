@@ -7,9 +7,9 @@ from torchvision import transforms as t
 import torch
 import numpy as np
 import yaml
-with open('../detection/setting.yaml') as f:
+# with open('../detection/setting.yaml') as f:
 # with open('setting.yaml') as f:
-# with open('scripts/detection/setting.yaml') as f:
+with open('scripts/detection/setting.yaml') as f:
     templates = yaml.safe_load(f)
 
 def get_transform():

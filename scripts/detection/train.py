@@ -22,9 +22,9 @@ from PIL import Image
 import re
 
 
-with open('../detection/setting.yaml') as f:
+# with open('../detection/setting.yaml') as f:
 # with open('setting.yaml') as f:
-# with open('scripts/detection/setting.yaml') as f:
+with open('scripts/detection/setting.yaml') as f:
     templates = yaml.safe_load(f)
 
 
@@ -169,9 +169,9 @@ def train_api(pathtoimg, pathtolabels, path_to_boxes, path_to_classes, add, devi
         print('классификация картинок')
         unlabeled_data_new = train_classification_and_predict(device, pathtoimg, path_to_classes,
                                                            images, annotations, unlabeled_data)
-        if len(unlabeled_data_new) < add:
-            unlabeled_data_new = unlabeled_data_new + random.sample(
-                list(set(unlabeled_data) - set(unlabeled_data_new)), k=4*add)
+        # if len(unlabeled_data_new) < add:
+        #     unlabeled_data_new = unlabeled_data_new + random.sample(
+        #         list(set(unlabeled_data) - set(unlabeled_data_new)), k=int(1.5*add))
 
         print('unlabeled_data {}'.format(len(unlabeled_data_new)))
         max_epochs = 150

@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile_gpu
     volumes:
-      - /home/neptun/PycharmProjects/datasets/:/datasets
+      - /home/neptun/PycharmProjects/datasets/:/ds
     ports:
       - "5000:5000"
     deploy:

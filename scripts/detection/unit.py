@@ -10,9 +10,9 @@ from skimage import io
 import numpy as np
 
 
-with open('../detection/setting.yaml') as f:
+# with open('../detection/setting.yaml') as f:
 # with open('setting.yaml') as f:
-# with open('scripts/detection/setting.yaml') as f:
+with open('scripts/detection/setting.yaml') as f:
     templates = yaml.safe_load(f)
 
 mean = [0.4914, 0.4822, 0.4465]

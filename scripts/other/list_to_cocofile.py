@@ -4,8 +4,8 @@ import copy
 import random
 
 
-def write_json(list_files, m):
-    full_train_json = '/home/neptun/PycharmProjects/datasets/coco/instances_train2017.json'
+def write_json(list_files, m, full_train_json='/home/neptun/PycharmProjects/datasets/coco/instances_train2017.json'):
+
     current_label = 17  # cat
 
     with open(full_train_json) as f:
@@ -35,6 +35,7 @@ def write_json(list_files, m):
     b = []
     for row in new_annotation:
         b.append(row['image_id'])
+    b = list(set(b))
 
     print('file {}, {} / {}'.format(m, len(b), len(list_files)))
 
@@ -55,7 +56,7 @@ def write_json(list_files, m):
         f.write(json.dumps(new_razmetka))
 
 if __name__ == '__main__':
-    list_files = [
+    list_files1 = [
         "000000237618.jpg",
         "000000302282.jpg",
         "000000373974.jpg",
@@ -78,4 +79,4 @@ if __name__ == '__main__':
         "000000062865.jpg",
         "000000022482.jpg",
         "000000266517.jpg",]
-    write_json(list_files, 3)
+    write_json(list_files1, 3)

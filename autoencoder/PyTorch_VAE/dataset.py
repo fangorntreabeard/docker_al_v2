@@ -13,6 +13,7 @@ from PIL import Image
 import numpy as np
 import yaml
 
+path_yaml = 'scripts/detection/models/vae_celeba.yaml'
 
 
 # Add your custom dataset class here
@@ -35,7 +36,6 @@ class Dataset_from_list(Dataset):
         self.transform = transform
         self.pathtoimg = pathtoimg
         self.id = {k: v for v, k in images}
-        path_yaml = '../detection/models/vae_celeba.yaml'
         with open(path_yaml, 'r') as file:
             try:
                 config = yaml.safe_load(file)
