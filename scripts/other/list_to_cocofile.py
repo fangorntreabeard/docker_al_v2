@@ -4,7 +4,7 @@ import copy
 import random
 
 
-def write_json(list_files, m, full_train_json='/home/neptun/PycharmProjects/datasets/coco/instances_train2017.json'):
+def write_json(list_files, m, path_to_out, full_train_json='/home/neptun/PycharmProjects/datasets/coco/instances_train2017.json'):
 
     current_label = 17  # cat
 
@@ -52,7 +52,7 @@ def write_json(list_files, m, full_train_json='/home/neptun/PycharmProjects/data
     new_razmetka = dict(annotations=new_annotation, images=new_image2,
                         categories=categories, info=info, licenses=licenses)
 
-    with open(os.path.join('/home/neptun/PycharmProjects/datasets/coco/labelstrain', f'{m}.json'), 'w') as f:
+    with open(os.path.join(path_to_out, f'{m}.json'), 'w') as f:
         f.write(json.dumps(new_razmetka))
 
 if __name__ == '__main__':

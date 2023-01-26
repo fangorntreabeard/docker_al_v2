@@ -26,7 +26,8 @@ def eval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_im
 
     if model is None:
         images_train, annotations_train = prepare_items_od(path_to_img_train, path_to_labels_train)
-        model0 = train_model(path_to_img_train, images_train, annotations_train, device,
+        model0 = train_model(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val,
+                             images_train, annotations_train, device,
                              num_epochs=templates['n_epoch'])
     else:
         model0 = model

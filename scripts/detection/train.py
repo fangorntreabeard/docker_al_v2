@@ -34,7 +34,7 @@ def get_transform():
     return t.Compose(transforms)
 
 
-def train_model(pathtoimg, images, annotations, device, num_epochs=5):
+def train_model(pathtoimg, pathtolabelstrain, pathtoimgval, pathtolabelsval, images, annotations, device, num_epochs=5):
     ds0 = Dataset_objdetect(pathtoimg, images, annotations, transforms=get_transform())
     train_dataloader = DataLoader(ds0, batch_size=8, shuffle=True, collate_fn=utils.collate_fn)
     num_classes = 2
@@ -47,7 +47,7 @@ def train_model(pathtoimg, images, annotations, device, num_epochs=5):
     optimizer = torch.optim.Adam(params, lr=1e-4)
     for epoch in range(num_epochs):
         train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=100)
-        outval = mAP(model)
+        outval = mAP(model, pathtolabelstrain, pathtoimg, pathtolabelsval, pathtoimgval, device)
         mape = outval['mAP(0.5:0.95)']
         if best_mape < mape:
             best_mape = mape
@@ -146,7 +146,8 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
     return sorted(out_name)
 
 
-def train_api(pathtoimg, pathtolabels, path_to_boxes, path_to_classes, add, device_rest, model=None):
+def train_api(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval, path_to_boxes, path_to_classes,
+              add, device_rest, model=None):
     if device_rest == 'gpu':
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
     else:
@@ -155,7 +156,8 @@ def train_api(pathtoimg, pathtolabels, path_to_boxes, path_to_classes, add, devi
     all_img = os.listdir(pathtoimg)
     images, annotations = prepare_items_od(pathtoimg, pathtolabels)
     if model is None:
-        model0 = train_model(pathtoimg, images, annotations, device, num_epochs=templates['n_epoch'])
+        model0 = train_model(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval,
+                             images, annotations, device, num_epochs=templates['n_epoch'])
     else:
         model0 = model
     unlabeled_data = list(set(all_img) - set([x[0] for x in images]))
@@ -201,24 +203,25 @@ def train_api(pathtoimg, pathtolabels, path_to_boxes, path_to_classes, add, devi
 
     return {'data': add_to_label_items}
 
-def mAP(model):
-    path_to_labels_train = '/home/neptun/PycharmProjects/datasets/coco/labelstrain'
-    path_to_img_train = '/home/neptun/PycharmProjects/datasets/coco/train2017'
-    path_to_labels_val = '/home/neptun/PycharmProjects/datasets/coco/labelsval'
-    path_to_img_val = '/home/neptun/PycharmProjects/datasets/coco/val2017'
-    device_rest = 'gpu'
-    return neval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_img_val, device_rest, model)
+def mAP(model, pathtolabelstrain, pathtoimgtrain, pathtolabelsval, pathtoimgval, devicerest):
+    # path_to_labels_train = '/home/neptun/PycharmProjects/datasets/coco/labelstrain'
+    # path_to_img_train = '/home/neptun/PycharmProjects/datasets/coco/train2017'
+    # path_to_labels_val = '/home/neptun/PycharmProjects/datasets/coco/labelsval'
+    # path_to_img_val = '/home/neptun/PycharmProjects/datasets/coco/val2017'
+    # device_rest = 'gpu'
+    return neval(pathtolabelstrain, pathtoimgtrain, pathtolabelsval, pathtoimgval, devicerest, model)
 
-def neval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_img_val, device_rest, model=None):
+def neval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_img_val, device, model=None):
 
-    if device_rest == 'gpu':
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    else:
-        device = "cpu"
+    # if device_rest == 'gpu':
+    #     device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    # else:
+    #     device = "cpu"
 
     if model is None:
         images_train, annotations_train = prepare_items_od(path_to_img_train, path_to_labels_train)
-        model0 = train_model(path_to_img_train, images_train, annotations_train, device,
+        model0 = train_model(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val,
+                             images_train, annotations_train, device,
                              num_epochs=templates['n_epoch'])
     else:
         model0 = model

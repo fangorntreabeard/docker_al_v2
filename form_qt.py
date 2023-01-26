@@ -16,22 +16,25 @@ class MyWindow(QtWidgets.QWidget):
         self.line_add = QtWidgets.QSpinBox()
         self.line_add.setMaximum(9999)
         self.line_add.setValue(500)
+        self.lineEdit_a = QtWidgets.QLineEdit()
+        self.lineEdit_a.setText('ds')
 
         self.lineEdit1 = QtWidgets.QLineEdit()
-        self.lineEdit1.setText('/home/neptun/PycharmProjects/datasets/coco/train2017')
+        self.lineEdit1.setText('##/coco/train2017')
         self.lineEdit2 = QtWidgets.QLineEdit()
-        self.lineEdit2.setText('/home/neptun/PycharmProjects/datasets/coco/labelstrain')
+        self.lineEdit2.setText('##/coco/labelstrain')
         self.lineEdit3 = QtWidgets.QLineEdit()
-        self.lineEdit3.setText('/home/neptun/PycharmProjects/datasets/coco/val2017')
+        self.lineEdit3.setText('##/coco/val2017')
         self.lineEdit4 = QtWidgets.QLineEdit()
-        self.lineEdit4.setText('/home/neptun/PycharmProjects/datasets/coco/labelsval')
+        self.lineEdit4.setText('##/coco/labelsval')
         self.lineEdit5 = QtWidgets.QLineEdit()
-        self.lineEdit5.setText('/home/neptun/PycharmProjects/datasets/coco/boxes/')
+        self.lineEdit5.setText('##/coco/boxes/')
         self.lineEdit6 = QtWidgets.QLineEdit()
-        self.lineEdit6.setText('/home/neptun/PycharmProjects/datasets/coco/classification/')
+        self.lineEdit6.setText('##/coco/classification/')
         self.form = QtWidgets.QFormLayout()
 
         self.form.addRow('Количество изображений:', self.line_add)
+        self.form.addRow('Путь (##):', self.lineEdit_a)
         self.form.addRow('<b>Настройки для обучения:</b>', QtWidgets.QLabel())
         self.form.addRow('Путь до изображений тренировки:', self.lineEdit1)
         self.form.addRow('Путь до меток тренировки:', self.lineEdit2)
@@ -81,12 +84,14 @@ class MyWindow(QtWidgets.QWidget):
         self.setLayout(self.vbox)
 
     def click_start(self):
-        path_to_labels = self.lineEdit2.text()
-        path_to_img = self.lineEdit1.text()
-        path_to_labels_val = self.lineEdit4.text()
-        path_to_img_val = self.lineEdit3.text()
-        path_to_boxes = self.lineEdit5.text()
-        path_to_classes = self.lineEdit6.text()
+        tot = self.lineEdit_a.text()
+
+        path_to_labels = self.lineEdit2.text().replace('##', tot)
+        path_to_img = self.lineEdit1.text().replace('##', tot)
+        path_to_labels_val = self.lineEdit4.text().replace('##', tot)
+        path_to_img_val = self.lineEdit3.text().replace('##', tot)
+        path_to_boxes = self.lineEdit5.text().replace('##', tot)
+        path_to_classes = self.lineEdit6.text().replace('##', tot)
         add = int(self.line_add.text())
         device_rest = 'gpu'
 
@@ -97,12 +102,15 @@ class MyWindow(QtWidgets.QWidget):
 
         self.work_line.setText('mAP0 = {}'.format(f))
 
-        step = train_api(path_to_img, path_to_labels, path_to_boxes, path_to_classes, add, device_rest, model)
+        step = train_api(path_to_img, path_to_labels, path_to_img_val, path_to_labels_val,
+                         path_to_boxes, path_to_classes, add, device_rest, model)
 
         self.out_line.setText(json.dumps(step['data']))
 
     def click_save(self):
         list_files = json.loads(self.out_line.toPlainText())
+        tot = self.lineEdit_a.text()
+
         m = 'default'
         s, ok = QtWidgets.QInputDialog.getText(self, 'Сохранение разметки', "Префикс", text='pref')
         if ok:
@@ -111,8 +119,8 @@ class MyWindow(QtWidgets.QWidget):
                                                                 caption='Сохранение разметки',
                                                                 filter='All (*);;JSON (*.json)',
                                                                 initialFilter='JSON (*.json)')
-        full_train_json=full_train_file[0]
-        write_json(list_files, m, full_train_json)
+        full_train_json = full_train_file[0]
+        write_json(list_files, m, self.lineEdit2.text().replace('##', tot), full_train_json)
 
 
 if __name__ == '__main__':
