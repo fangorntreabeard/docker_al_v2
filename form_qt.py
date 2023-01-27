@@ -4,7 +4,7 @@ import json
 from scripts.detection.train import train_api
 from scripts.detection.eval import eval
 from scripts.other.list_to_cocofile import write_json
-
+import datetime
 
 class MyWindow(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -84,6 +84,7 @@ class MyWindow(QtWidgets.QWidget):
         self.setLayout(self.vbox)
 
     def click_start(self):
+        t_start = datetime.datetime.now()
         tot = self.lineEdit_a.text()
 
         path_to_labels = self.lineEdit2.text().replace('##', tot)
@@ -106,6 +107,7 @@ class MyWindow(QtWidgets.QWidget):
                          path_to_boxes, path_to_classes, add, device_rest, model)
 
         self.out_line.setText(json.dumps(step['data']))
+        print('DONE {}'.format(datetime.datetime.now() - t_start))
 
     def click_save(self):
         list_files = json.loads(self.out_line.toPlainText())

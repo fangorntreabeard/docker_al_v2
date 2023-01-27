@@ -26,6 +26,6 @@ trainer_params:
   max_epochs: 500
 
 logging_params:
-  save_dir: "logs/"
-  name: "VanillaVAE"
+  save_dir: "ds/logs/"
+  name: "VAE"
   

@@ -21,9 +21,9 @@ def train_vae(filename_yaml, pathtoimg, images, annotations, max_epochs):
         except yaml.YAMLError as exc:
             print(exc)
 
-    PATH_LOGS = './logs'
-    if os.path.exists(PATH_LOGS):
-        shutil.rmtree(PATH_LOGS)
+    # PATH_LOGS = './logs'
+    # if os.path.exists(PATH_LOGS):
+    #     shutil.rmtree(PATH_LOGS)
 
     tb_logger = TensorBoardLogger(save_dir=config['logging_params']['save_dir'],
                                   name=config['model_params']['name'],

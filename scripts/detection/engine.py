@@ -75,7 +75,7 @@ def _get_iou_types(model):
 @torch.inference_mode()
 def evaluate(model, data_loader, device):
     n_threads = torch.get_num_threads()
-    # FIXME remove this and make paste_masks_in_image run on the GPU
+    # FIXME remove this and make paste_masks_in_image r_u_n on the GPU
     torch.set_num_threads(1)
     cpu_device = torch.device("cpu")
     model.eval()

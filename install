@@ -1,2 +1,10 @@
 https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
 
+docker-compose -f docker-compose_gpu.yml up -d
+
+docker run --rm -it  --gpus all --ipc=host
+-v /tmp/.X11-unix:/tmp/.X11-unix
+-v /home/neptun/PycharmProjects/datasets/:/ds
+-e DISPLAY=$DISPLAY
+-u qtuser
+ml_od_gpu python3 form_qt.py

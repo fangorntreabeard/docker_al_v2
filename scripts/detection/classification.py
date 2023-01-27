@@ -118,7 +118,7 @@ class CustomImageDataset(Dataset):
 def find_be_images(device, model, pathtoimg, unlabeled_data, datatransforms, class_names):
     model.eval()
     image_datasets = CustomImageDataset(pathtoimg, unlabeled_data, datatransforms)
-    dataloaders = torch.utils.data.DataLoader(image_datasets, batch_size=32,  shuffle=False, num_workers=4)
+    dataloaders = torch.utils.data.DataLoader(image_datasets, batch_size=8,  shuffle=False, num_workers=4)
     new_images = []
     with torch.no_grad():
         for inputs, ind in dataloaders:
