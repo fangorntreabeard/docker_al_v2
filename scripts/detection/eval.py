@@ -17,7 +17,7 @@ def get_transform():
     return t.Compose(transforms)
 
 
-def eval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_img_val, device_rest, model=None):
+def eval(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val, device_rest, model=None):
 
     if device_rest == 'gpu':
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -37,8 +37,8 @@ def eval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_im
     data_loader_test = DataLoader(dataset_test, batch_size=32, shuffle=False, collate_fn=utils.collate_fn)
 
     coco_evaluator = evaluate(model0, data_loader_test, device=device)
-    # return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox'])}
-    return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox']), 'model': model0}
+    return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox'])}
+    # return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox']), 'model': model0}
 
 
 def _summarize(coco, ap=1, iouThr=None, areaRng='all', maxDets=100):

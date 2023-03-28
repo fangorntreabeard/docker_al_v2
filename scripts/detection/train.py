@@ -46,11 +46,13 @@ def train_model(pathtoimg, pathtolabelstrain, pathtoimgval, pathtolabelsval, ima
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.Adam(params, lr=1e-4)
     for epoch in range(num_epochs):
+        print('epoch {}'.format(epoch+1))
         train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=100)
         outval = mAP(model, pathtolabelstrain, pathtoimg, pathtolabelsval, pathtoimgval, device)
         mape = outval['mAP(0.5:0.95)']
         if best_mape < mape:
             best_mape = mape
+            print('besr val mape {}'.format(best_mape))
         best_model = copy.deepcopy(model)
 
     return best_model
@@ -77,7 +79,8 @@ def find_out_net(model, device, pathtoimg, unlabeled_data):
         indexs = []
         values = []
         bboxes = []
-        for images, _, indx in train_dataloader:
+        for ep, (images, _, indx )in enumerate(train_dataloader):
+            print('epoch {}/{}'.format(ep, len(train_dataloader)))
             images = list(img.to(device) for img in images)
             outputs = model(images)
             prob = [x['scores'].tolist() for x in outputs]
@@ -90,9 +93,6 @@ def find_out_net(model, device, pathtoimg, unlabeled_data):
                     for s in b_row:
                         dd.append(s)
                     p1 = max(dd)
-                    # p2 = 1 - p1
-                    # pp = sorted([p1, p2])
-                    # ppp = 1 - (pp[1] - pp[0])
                     confidence.append(p1)
             boxes = [x['boxes'].tolist() for x in outputs]
 
@@ -146,28 +146,32 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
     return sorted(out_name)
 
 
-def train_api(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval, path_to_boxes, path_to_classes,
-              add, device_rest, model=None):
+def train_api(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval, add=100, batch_unlabeled=5000, device_rest='gpu',
+              model=None):
     if device_rest == 'gpu':
         device = "cuda:0" if torch.cuda.is_available() else "cpu"
     else:
         device = "cpu"
-
+    # print('curr dir{}'.format(os.path.curdir))
     all_img = os.listdir(pathtoimg)
     images, annotations = prepare_items_od(pathtoimg, pathtolabels)
     if model is None:
+        print('start train zero model')
         model0 = train_model(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval,
                              images, annotations, device, num_epochs=templates['n_epoch'])
     else:
         model0 = model
     unlabeled_data = list(set(all_img) - set([x[0] for x in images]))
-    # unlabeled_data = random.sample(unlabeled_data, k=25000)
+    unlabeled_data = random.sample(unlabeled_data, k=batch_unlabeled)
 
-    methode = 'vae'
+    methode = 'uncertainty'
     if methode == 'uncertainty':
+        print('start uncertainty', add)
         add_to_label_items = sampling_uncertainty(model0, pathtoimg, unlabeled_data, add, device)
     else:
         # add_to_label_items = []
+        path_to_classes = ''
+        path_to_boxes = ''
         print('классификация картинок')
         unlabeled_data_new = train_classification_and_predict(device, pathtoimg, path_to_classes,
                                                            images, annotations, unlabeled_data)
