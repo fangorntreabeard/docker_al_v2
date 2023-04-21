@@ -23,7 +23,6 @@ import re
 
 
 # with open('../detection/setting.yaml') as f:
-# with open('setting.yaml') as f:
 with open('scripts/detection/setting.yaml') as f:
     templates = yaml.safe_load(f)
 

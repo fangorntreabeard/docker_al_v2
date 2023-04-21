@@ -20,15 +20,15 @@ def mAP():
     # resp = u.read()
     # out = json.loads(resp.decode('utf-8'))['mAP(0.5:0.95)']
     # return out
-    path_to_labels_train = '/home/alex/PycharmProjects/dataset/coco/for_al'
-    path_to_img_train = '/home/alex/PycharmProjects/dataset/coco/train2017'
-    path_to_labels_val = '/home/alex/PycharmProjects/dataset/coco/labelsval'
-    path_to_img_val = '/home/alex/PycharmProjects/dataset/coco/val2017'
+    path_to_labels_train = '/home/neptun/PycharmProjects/datasets/coco/labelstrain/first.json'
+    path_to_img_train = '/home/neptun/PycharmProjects/datasets/coco/train2017'
+    path_to_labels_val = '/home/neptun/PycharmProjects/datasets/coco/labelsval/val.json'
+    path_to_img_val = '/home/neptun/PycharmProjects/datasets/coco/val2017'
     device_rest = 'gpu'
-    return eval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_img_val, device_rest)
+    return eval(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val, device_rest)
 
 if __name__ == '__main__':
-    p = [80000]
+    p = [10000]
     k = 10
     L = []
     for i in p:
@@ -37,7 +37,7 @@ if __name__ == '__main__':
         for j in range(k):
             make_file(i)
             f = mAP()['mAP(0.5:0.95)']
-            # print(f)
+            print(f)
             mean += f
             m.append(f)
         L.append(mean/k)
