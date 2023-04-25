@@ -32,7 +32,12 @@ class Evaluate(Resource):
         path_to_img_train = reqparse.request.args['path_to_img_train']
         path_to_labels_val = reqparse.request.args['path_to_labels_val']
         path_to_img_val = reqparse.request.args['path_to_img_val']
-        return make_eval(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val, device)
+        path_to_labels_test = reqparse.request.args['path_to_labels_test']
+        path_to_img_test = reqparse.request.args['path_to_img_test']
+        return make_eval(path_to_img_train, path_to_labels_train,
+                         path_to_img_val, path_to_labels_val,
+                         path_to_labels_test, path_to_img_test,
+                         device)
 
 
 def make_train(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val, add, batch_unlabeled,
@@ -42,8 +47,10 @@ def make_train(path_to_img_train, path_to_labels_train, path_to_img_val, path_to
     return jsonify(out)
 
 
-def make_eval(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val, device):
-    out = eval(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val, device)
+def make_eval(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val,
+              path_to_labels_test, path_to_img_test, device):
+    out = eval(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val,
+               path_to_labels_test, path_to_img_test, device)
     return jsonify(out)
 
 

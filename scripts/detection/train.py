@@ -8,7 +8,7 @@ import yaml
 from torch.utils.data import DataLoader
 from torchvision import transforms as t
 from scripts.detection.engine import train_one_epoch
-from scripts.detection.vae import train_vae_od, find_loss_vae, plot_err_vae
+# from scripts.detection.vae import train_vae_od, find_loss_vae, plot_err_vae
 from scripts.detection.classification import classification
 # from scripts.detection.eval import eval
 from scripts.detection.unit import Dataset_objdetect, prepare_items_od
@@ -20,10 +20,11 @@ from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.faster_rcnn import GeneralizedRCNNTransform
 from PIL import Image
 import re
+import uuid
 
 
-# with open('../detection/setting.yaml') as f:
-with open('scripts/detection/setting.yaml') as f:
+with open('../detection/setting.yaml') as f:
+# with open('scripts/detection/setting.yaml') as f:
     templates = yaml.safe_load(f)
 
 
@@ -33,9 +34,14 @@ def get_transform():
     return t.Compose(transforms)
 
 
-def train_model(pathtoimg, pathtolabelstrain, pathtoimgval, pathtolabelsval, images, annotations, device, num_epochs=5):
-    ds0 = Dataset_objdetect(pathtoimg, images, annotations, transforms=get_transform())
+def train_model(pathtoimg, pathtolabelstrain,
+                pathtoimgval, pathtolabelsval,
+                device, num_epochs=5):
+    images_train, annotations_train = prepare_items_od(pathtoimg, pathtolabelstrain)
+    print('in train {} samples'.format(len(set(images_train))))
+    ds0 = Dataset_objdetect(pathtoimg, images_train, annotations_train, transforms=get_transform())
     train_dataloader = DataLoader(ds0, batch_size=8, shuffle=True, collate_fn=utils.collate_fn)
+
     num_classes = 2
     best_model = None
     best_mape = 0
@@ -45,15 +51,19 @@ def train_model(pathtoimg, pathtolabelstrain, pathtoimgval, pathtolabelsval, ima
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.Adam(params, lr=1e-4)
     for epoch in range(num_epochs):
-        print('epoch {}'.format(epoch+1))
+        # print('epoch {}'.format(epoch+1))
         train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=100)
-        outval = mAP(model, pathtolabelstrain, pathtoimg, pathtolabelsval, pathtoimgval, device)
+        outval = mAP(model,
+                     pathtolabelstrain, pathtoimg,
+                     pathtolabelsval, pathtoimgval,
+                     device)
         mape = outval['mAP(0.5:0.95)']
         if best_mape < mape:
             best_mape = mape
-            print('besr val mape {}'.format(best_mape))
+            # print('besr val mape {}'.format(best_mape))
         best_model = copy.deepcopy(model)
-
+    if ds0.create_dataset:
+        os.remove('../../data/'+ds0.name+'.hdf5')
     return best_model
 
 
@@ -70,7 +80,7 @@ def get_model_instance_segmentation(num_classes):
 
     return model
 
-def find_out_net(model, device, pathtoimg, unlabeled_data):
+def find_out_net(model, device, pathtoimg, unlabeled_data, func):
     with torch.no_grad():
         model.eval()
         dataset_train = Dataset_objdetect(pathtoimg, unlabeled_data, annotations=None, transforms=get_transform())
@@ -79,7 +89,7 @@ def find_out_net(model, device, pathtoimg, unlabeled_data):
         values = []
         bboxes = []
         for ep, (images, _, indx )in enumerate(train_dataloader):
-            print('epoch {}/{}'.format(ep, len(train_dataloader)))
+            # print('epoch {}/{}'.format(ep, len(train_dataloader)))
             images = list(img.to(device) for img in images)
             outputs = model(images)
             prob = [x['scores'].tolist() for x in outputs]
@@ -91,13 +101,16 @@ def find_out_net(model, device, pathtoimg, unlabeled_data):
                     dd = []
                     for s in b_row:
                         dd.append(s)
-                    p1 = max(dd)
+
+                    p1 = func(dd)
                     confidence.append(p1)
             boxes = [x['boxes'].tolist() for x in outputs]
 
             indexs += [x for x in indx]
             values += confidence
             bboxes = bboxes + boxes
+        if dataset_train.create_dataset:
+            os.remove('../../data/'+dataset_train.name+'.hdf5')
 
     return indexs, values, bboxes
 
@@ -120,16 +133,22 @@ def save_bbox_disk(bbox, pathtoimg, path_to_boxes, unlabeled_data):
                     imgs.save(os.path.join(path_to_boxes, '{}_{}.jpg'.format(name.split('.')[0], j)))
 
 
+def mean(x):
+    return sum(x) / len(x)
+
 def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
-    indexs, values, _ = find_out_net(model, device, pathtoimg, unlabeled_data)
+    # min, max, mean
+    # func = mean
+    indexs, values, _ = find_out_net(model, device, pathtoimg, unlabeled_data, func=mean)
 
     # out_name = []
     out_dict = {k: v for k, v in zip(indexs, values)}
     a = sorted(out_dict.items(), key=lambda x: x[1])
 
     # temp = []
-    p_min = 0.8
-    p_max = 1
+    p_min = 0
+    p_max = 0.5
+
     pp = [(row[0], row[1]) for row in a if p_min <= row[1] < p_max]
     temp = random.sample(pp, k=min(add, len(pp)))
     # for ii in range(5):
@@ -145,66 +164,34 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
     return sorted(out_name)
 
 
-def train_api(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval, add=100, batch_unlabeled=5000, device_rest='gpu',
-              model=None):
-    if device_rest == 'gpu':
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    else:
-        device = "cpu"
+def train_api(pathtoimg, pathtolabels,
+              pathtoimgval, pathtolabelsval,
+              add=100, device_rest='0',
+              model=None, batch_unlabeled=-1,
+              save_model=False, path_do_dir_model=''):
+    device = f"cuda:{device_rest}" if torch.cuda.is_available() else "cpu"
     # print('curr dir{}'.format(os.path.curdir))
     all_img = os.listdir(pathtoimg)
     images, annotations = prepare_items_od(pathtoimg, pathtolabels)
     if model is None:
         print('start train zero model')
         model0 = train_model(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval,
-                             images, annotations, device, num_epochs=templates['n_epoch'])
+                             device, num_epochs=templates['n_epoch'])
     else:
         model0 = model
     unlabeled_data = list(set(all_img) - set([x[0] for x in images]))
-    unlabeled_data = random.sample(unlabeled_data, k=batch_unlabeled)
+    if batch_unlabeled > 0:
+        unlabeled_data = random.sample(unlabeled_data, k=min(batch_unlabeled, len(unlabeled_data)))
 
-    methode = 'uncertainty'
-    if methode == 'uncertainty':
-        print('start uncertainty', add)
-        add_to_label_items = sampling_uncertainty(model0, pathtoimg, unlabeled_data, add, device)
+    # methode = 'uncertainty'
+    print('start uncertainty', add)
+    add_to_label_items = sampling_uncertainty(model0, pathtoimg, unlabeled_data, add, device)
+    if save_model:
+        path_model = os.path.join(path_do_dir_model, '{}.pth'.format(uuid.uuid4()))
+        torch.save(model0, path_model)
+        return {'data': add_to_label_items, 'model': path_model}
     else:
-        # add_to_label_items = []
-        path_to_classes = ''
-        path_to_boxes = ''
-        print('классификация картинок')
-        unlabeled_data_new = train_classification_and_predict(device, pathtoimg, path_to_classes,
-                                                           images, annotations, unlabeled_data)
-        # if len(unlabeled_data_new) < add:
-        #     unlabeled_data_new = unlabeled_data_new + random.sample(
-        #         list(set(unlabeled_data) - set(unlabeled_data_new)), k=int(1.5*add))
-
-        print('unlabeled_data {}'.format(len(unlabeled_data_new)))
-        max_epochs = 150
-        print('обучение вае')
-        model_vae = train_vae_od(device, pathtoimg, images, annotations, max_epochs)
-        print('детекция боксов')
-        _, _, bbox = find_out_net(model0, device, pathtoimg, unlabeled_data_new)
-        print('сохранение боксов')
-        save_bbox_disk(bbox, pathtoimg, path_to_boxes, unlabeled_data_new)
-        print('ошибка вае')
-        err_vae = find_loss_vae(model_vae, path_to_boxes)
-        print('результат')
-        err_vae_2 = [('.'.join(re.split('\_[\d]*\.', x)), y) for x, y in err_vae]
-        unic_imgs = list(set([x for x, y in err_vae_2]))
-        new_err = []
-        for unic_imgs in unic_imgs:
-            a = [y for x, y in err_vae_2 if x == unic_imgs]
-            new_err.append((unic_imgs, sum(a)/len(a)))
-        new_err = sorted(new_err, key=lambda x: x[1], reverse=False)
-        if len(new_err) > add:
-            add_to_label_items = [x for (x, k) in new_err][-add:]
-        else:
-            add_to_label_items = new_err + random.sample(
-                list(set(unlabeled_data) - set([x for (x, k) in new_err])), k=add-len(new_err))
-        # plot_err_vae(err_vae)
-        # print(err_vae[:add])
-
-    return {'data': add_to_label_items}
+        return {'data': add_to_label_items}
 
 def mAP(model, pathtolabelstrain, pathtoimgtrain, pathtolabelsval, pathtoimgval, devicerest):
     # path_to_labels_train = '/home/neptun/PycharmProjects/datasets/coco/labelstrain'
@@ -230,7 +217,7 @@ def neval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_i
         model0 = model
 
     images_test, annotations_test = prepare_items_od(path_to_img_val, path_to_labels_val)
-    dataset_test = Dataset_objdetect(path_to_img_val, images_test, annotations_test, get_transform())
+    dataset_test = Dataset_objdetect(path_to_img_val, images_test, annotations_test, get_transform(), name='val')
     data_loader_test = DataLoader(dataset_test, batch_size=32, shuffle=False, collate_fn=utils.collate_fn)
 
     coco_evaluator = evaluate(model0, data_loader_test, device=device)

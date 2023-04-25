@@ -2,11 +2,13 @@ import os
 import random
 import json
 import copy
-from coco_lib.objectdetection import ObjectDetectionDataset
+# from coco_lib.objectdetection import ObjectDetectionDataset
+import shutil
 
-path_to_dataset = '/home/neptun/PycharmProjects/datasets/coco'
+# path_to_dataset = '/home/neptun/PycharmProjects/datasets/coco'
+path_to_dataset = '/media/alex/DAtA2/Datasets/coco'
 def make_file(N):
-    current_label = 17  #cat
+    current_label = 1  #cat
     # N = 1000
 
     with open(os.path.join(path_to_dataset, 'instances_val2017.json')) as f:
@@ -28,7 +30,10 @@ def make_file(N):
 
     new_annotation = []
     for row in annotations:
-        if row['category_id'] == current_label and row['image_id'] in all_photo:
+        iii = [x for x in images if x['id'] == row['image_id']][0]
+        if row['category_id'] == current_label and \
+                row['image_id'] in all_photo and \
+                row['area'] / iii['height'] / iii['width'] > 0.05:
             copy_row = copy.deepcopy(row)
             copy_row['segmentation'] = []
             new_annotation.append(copy_row)
@@ -37,6 +42,19 @@ def make_file(N):
     for row in new_annotation:
         good_images_ids.append(row['image_id'])
     good_images_ids = list(set(good_images_ids))
+
+
+
+    good_images_path = []
+    for row in images:
+        if row['id'] in good_images_ids:
+            good_images_path.append(row['file_name'])
+    good_images_path = list(set(good_images_path))
+
+    for row in good_images_path:
+        f1 = '/media/alex/DAtA2/Datasets/coco/val2017/' + row
+        f2 = '/media/alex/DAtA2/Datasets/coco/my_dataset/val/' + row
+        shutil.copyfile(f1, f2)
 
     print('zero file {} / {}'.format(len(good_images_ids), N))
 
@@ -67,13 +85,15 @@ def make_file(N):
     #     if row['image_id'] in a:
     #         end_annot.append(copy.deepcopy(row))
 
+
+
     new_razmetka = dict(annotations=new_annotation, images=new_image,
                         categories=categories, info=info, licenses=licenses)
 
-    with open(os.path.join(path_to_dataset, 'labelsval', 'val.json'), 'w') as f:
+    with open(os.path.join(path_to_dataset, 'my_dataset', 'labels_val', 'val.json'), 'w') as f:
         f.write(json.dumps(new_razmetka))
 
 if __name__ == '__main__':
     make_file(-1)
-    dataset = ObjectDetectionDataset.load(os.path.join(path_to_dataset, 'labelsval', 'val.json'))
-    pass
+    # dataset = ObjectDetectionDataset.load(os.path.join(path_to_dataset, 'labelsval', 'val.json'))
+    # pass
