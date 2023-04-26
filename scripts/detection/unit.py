@@ -11,11 +11,6 @@ import numpy as np
 import h5py
 import uuid
 
-
-with open('../detection/setting.yaml') as f:
-# with open('scripts/detection/setting.yaml') as f:
-    templates = yaml.safe_load(f)
-
 mean = [0.4914, 0.4822, 0.4465]
 std = [0.2470, 0.2435, 0.2616]
 
@@ -54,7 +49,7 @@ def prepare_items_od(path_to_img, path_to_labels):
 
 
 class Dataset_objdetect(Dataset):
-    def __init__(self, path_to_img, images, annotations, transforms, path_to_h5='../../data/', name=''):
+    def __init__(self, path_to_img, images, annotations, transforms, path_to_h5='/data', name=''):
         self.path_to_img = path_to_img
         count = 0
         if not annotations is None:

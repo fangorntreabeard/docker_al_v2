@@ -5,8 +5,8 @@ import copy
 # from coco_lib.objectdetection import ObjectDetectionDataset
 import shutil
 
-# path_to_dataset = '/home/neptun/PycharmProjects/datasets/coco'
-path_to_dataset = '/media/alex/DAtA2/Datasets/coco'
+path_to_dataset = '/home/neptun/PycharmProjects/datasets/coco'
+# path_to_dataset = '/media/alex/DAtA2/Datasets/coco'
 def make_file(N):
     current_label = 1  #cat
     # N = 1000
@@ -52,8 +52,8 @@ def make_file(N):
     good_images_path = list(set(good_images_path))
 
     for row in good_images_path:
-        f1 = '/media/alex/DAtA2/Datasets/coco/val2017/' + row
-        f2 = '/media/alex/DAtA2/Datasets/coco/my_dataset/val/' + row
+        f1 = path_to_dataset + '/val2017/' + row
+        f2 = path_to_dataset + '/my_dataset/val/' + row
         shutil.copyfile(f1, f2)
 
     print('zero file {} / {}'.format(len(good_images_ids), N))

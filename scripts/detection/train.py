@@ -23,10 +23,6 @@ import re
 import uuid
 
 
-with open('../detection/setting.yaml') as f:
-# with open('scripts/detection/setting.yaml') as f:
-    templates = yaml.safe_load(f)
-
 
 
 def get_transform():
@@ -36,7 +32,7 @@ def get_transform():
 
 def train_model(pathtoimg, pathtolabelstrain,
                 pathtoimgval, pathtolabelsval,
-                device, num_epochs=5):
+                device, num_epochs=5, pretrain=True, use_val_test=True):
     images_train, annotations_train = prepare_items_od(pathtoimg, pathtolabelstrain)
     print('in train {} samples'.format(len(set(images_train))))
     ds0 = Dataset_objdetect(pathtoimg, images_train, annotations_train, transforms=get_transform())
@@ -46,17 +42,24 @@ def train_model(pathtoimg, pathtolabelstrain,
     best_model = None
     best_mape = 0
 
-    model = get_model_instance_segmentation(num_classes)
+    model = get_model_instance_segmentation(num_classes, pretrain)
     model.to(device)
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.Adam(params, lr=1e-4)
     for epoch in range(num_epochs):
         # print('epoch {}'.format(epoch+1))
         train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=100)
-        outval = mAP(model,
-                     pathtolabelstrain, pathtoimg,
-                     pathtolabelsval, pathtoimgval,
-                     device)
+        if use_val_test:
+            outval = mAP(model,
+                         pathtolabelstrain, pathtoimg,
+                         pathtolabelsval, pathtoimgval,
+                         device)
+        else:
+            outval = mAP(model,
+                         pathtolabelstrain, pathtoimg,
+                         pathtolabelstrain, pathtoimg,
+                         device)
+
         mape = outval['mAP(0.5:0.95)']
         if best_mape < mape:
             best_mape = mape
@@ -67,9 +70,13 @@ def train_model(pathtoimg, pathtolabelstrain,
     return best_model
 
 
-def get_model_instance_segmentation(num_classes):
+def get_model_instance_segmentation(num_classes, pretrain):
     # load an instance segmentation model pre-trained on COCO
-    model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights='FasterRCNN_ResNet50_FPN_Weights.DEFAULT')
+    if pretrain:
+        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights='FasterRCNN_ResNet50_FPN_Weights.DEFAULT')
+    else:
+        model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights=None)
+
 
     # get number of input features for the classifier
     in_features = model.roi_heads.box_predictor.cls_score.in_features
@@ -167,18 +174,20 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
 def train_api(pathtoimg, pathtolabels,
               pathtoimgval, pathtolabelsval,
               add=100, device_rest='0',
-              model=None, batch_unlabeled=-1,
-              save_model=False, path_do_dir_model=''):
+              path_model=None, batch_unlabeled=-1, pretrain=True,
+              save_model=False, use_val_test=True):
     device = f"cuda:{device_rest}" if torch.cuda.is_available() else "cpu"
+    path_do_dir_model = '/weight'
     # print('curr dir{}'.format(os.path.curdir))
     all_img = os.listdir(pathtoimg)
-    images, annotations = prepare_items_od(pathtoimg, pathtolabels)
-    if model is None:
+    images, _ = prepare_items_od(pathtoimg, pathtolabels)
+    if path_model is None:
         print('start train zero model')
         model0 = train_model(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval,
-                             device, num_epochs=templates['n_epoch'])
+                             device, num_epochs=20, pretrain=pretrain, use_val_test=use_val_test)
     else:
-        model0 = model
+        model0 = torch.load(path_model)
+
     unlabeled_data = list(set(all_img) - set([x[0] for x in images]))
     if batch_unlabeled > 0:
         unlabeled_data = random.sample(unlabeled_data, k=min(batch_unlabeled, len(unlabeled_data)))
@@ -194,34 +203,19 @@ def train_api(pathtoimg, pathtolabels,
         return {'data': add_to_label_items}
 
 def mAP(model, pathtolabelstrain, pathtoimgtrain, pathtolabelsval, pathtoimgval, devicerest):
-    # path_to_labels_train = '/home/neptun/PycharmProjects/datasets/coco/labelstrain'
-    # path_to_img_train = '/home/neptun/PycharmProjects/datasets/coco/train2017'
-    # path_to_labels_val = '/home/neptun/PycharmProjects/datasets/coco/labelsval'
-    # path_to_img_val = '/home/neptun/PycharmProjects/datasets/coco/val2017'
-    # device_rest = 'gpu'
-    return neval(pathtolabelstrain, pathtoimgtrain, pathtolabelsval, pathtoimgval, devicerest, model)
-
-def neval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_img_val, device, model=None):
-
-    # if device_rest == 'gpu':
-    #     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    # else:
-    #     device = "cpu"
-
     if model is None:
-        images_train, annotations_train = prepare_items_od(path_to_img_train, path_to_labels_train)
-        model0 = train_model(path_to_img_train, path_to_labels_train, path_to_img_val, path_to_labels_val,
-                             images_train, annotations_train, device,
-                             num_epochs=templates['n_epoch'])
+        model0 = train_model(pathtoimgtrain, pathtolabelstrain, pathtoimgval, pathtolabelsval,
+                             devicerest, num_epochs=20, use_val_test=True)
     else:
         model0 = model
 
-    images_test, annotations_test = prepare_items_od(path_to_img_val, path_to_labels_val)
-    dataset_test = Dataset_objdetect(path_to_img_val, images_test, annotations_test, get_transform(), name='val')
+    images_test, annotations_test = prepare_items_od(pathtoimgval, pathtolabelsval)
+    dataset_test = Dataset_objdetect(pathtoimgval, images_test, annotations_test, get_transform(), name='val')
     data_loader_test = DataLoader(dataset_test, batch_size=32, shuffle=False, collate_fn=utils.collate_fn)
 
-    coco_evaluator = evaluate(model0, data_loader_test, device=device)
+    coco_evaluator = evaluate(model0, data_loader_test, device=devicerest)
     return {'mAP(0.5:0.95)': _summarize(coco_evaluator.coco_eval['bbox']), 'model': model0}
+
 
 def _summarize(coco, ap=1, iouThr=None, areaRng='all', maxDets=100):
     p = coco.params

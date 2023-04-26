@@ -10,10 +10,6 @@ import yaml
 import os
 import uuid
 
-with open('../detection/setting.yaml') as f:
-# with open('scripts/detection/setting.yaml') as f:
-    templates = yaml.safe_load(f)
-
 def get_transform():
     transforms = [t.ToTensor()]
     return t.Compose(transforms)
@@ -22,15 +18,16 @@ def get_transform():
 def eval(path_to_img_train, path_to_labels_train,
          path_to_img_val, path_to_labels_val,
          path_to_labels_test, path_to_img_test,
-         device_rest, save_model, path_do_dir_model, model=None):
+         device_rest, save_model, pretrain=True, model=None):
 
     device = f"cuda:{device_rest}" if torch.cuda.is_available() else "cpu"
+    path_do_dir_model = '/weight'
 
     if model is None:
         model0 = train_model(path_to_img_train, path_to_labels_train,
                              path_to_img_val, path_to_labels_val,
                              device,
-                             num_epochs=templates['n_epoch'])
+                             num_epochs=20, pretrain=pretrain, use_val_test=True)
     else:
         model0 = model
 

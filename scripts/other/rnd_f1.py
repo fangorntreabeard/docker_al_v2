@@ -35,10 +35,11 @@ def mAP():
     # path_to_img_val = '/home/neptun/PycharmProjects/datasets/coco/val2017'
     device_rest = '0'
     path_do_dir_model = '../../weight'
+    pretrain = True
     return eval(path_to_img_train, path_to_labels_train,
                 path_to_img_val, path_to_labels_val,
                 path_to_img_test, path_to_labels_test, save_model, path_do_dir_model,
-                device_rest)
+                device_rest, pretrain)
 
 if __name__ == '__main__':
     p = [1_000, 10_000, 30_000]

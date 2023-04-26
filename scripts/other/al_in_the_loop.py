@@ -17,9 +17,10 @@ path_to_labels_test = '/media/alex/DAtA2/Datasets/coco/my_dataset/labels_test/te
 device_rest = '1'
 path_to_json_train = '/media/alex/DAtA2/Datasets/coco/my_dataset/labels_train/train.json'
 path_do_dir_model = '../../weight'
+pretrain = True
 
 
-def al(add, model=None):
+def al(add, path_model=''):
     # url = 'http://127.0.0.1:5000/active_learning'
     # params = {
     #     'path_to_labels': '/home/neptun/PycharmProjects/datasets/coco/labelstrain/',
@@ -39,12 +40,11 @@ def al(add, model=None):
     # path_to_boxes = '/home/neptun/PycharmProjects/datasets/coco/boxes/'
     # path_to_classes = '/home/neptun/PycharmProjects/datasets/coco/classification/'
     # add = 1000
-    save_model = model is None
+    # save_model = model is None
 
     return train_api(path_to_img_train, path_to_labels_train,
                      path_to_img_val, path_to_labels_val,
-                     add, device_rest, model, batch_unlabeled=-1,
-                     save_model=save_model, path_do_dir_model=path_do_dir_model)
+                     add, device_rest, path_model, batch_unlabeled=-1, pretrain=pretrain, save_model=False)
 
 def mAP():
     # url = 'http://127.0.0.1:5000/eval'
@@ -67,7 +67,7 @@ def mAP():
     return eval(path_to_img_train, path_to_labels_train,
                 path_to_img_val, path_to_labels_val,
                 path_to_img_test, path_to_labels_test,
-                device_rest, save_model, path_do_dir_model)
+                device_rest, save_model, path_do_dir_model, pretrain)
 
 if __name__ == '__main__':
     L = []
@@ -88,8 +88,7 @@ if __name__ == '__main__':
             a.append(f)
             print('mAP', n_al[kk], f)
             if kk != len(n_al) - 1:
-                model = torch.load(path_model)
-                step = al(n_al[kk], model)
+                step = al(n_al[kk], path_model)
                 write_json(step['data'],
                            kk,
                            path_to_out=path_to_labels_train,

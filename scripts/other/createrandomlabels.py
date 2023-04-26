@@ -59,4 +59,6 @@ def make_file(N, path_to_json_train, path_to_out):
         f.write(json.dumps(new_razmetka))
 
 if __name__ == '__main__':
-    make_file(10000)
+    make_file(1000,
+              path_to_json_train='/home/neptun/PycharmProjects/datasets/coco/my_dataset/labels_train/train.json',
+              path_to_out='/home/neptun/PycharmProjects/datasets/coco/first.json')

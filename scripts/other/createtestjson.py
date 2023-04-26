@@ -5,8 +5,8 @@ import copy
 # from coco_lib.objectdetection import ObjectDetectionDataset
 import shutil
 
-# path_to_dataset = '/home/neptun/PycharmProjects/datasets/coco'
-path_to_dataset = '/media/alex/DAtA2/Datasets/coco'
+path_to_dataset = '/home/neptun/PycharmProjects/datasets/coco'
+# path_to_dataset = '/media/alex/DAtA2/Datasets/coco'
 def make_file(p):
     current_label = 1  #cat
     # N = 1000
@@ -55,8 +55,8 @@ def make_file(p):
     good_images_path = list(set(good_images_path))
 
     for row in good_images_path:
-        f1 = '/media/alex/DAtA2/Datasets/coco/train2017/' + row
-        f2 = '/media/alex/DAtA2/Datasets/coco/my_dataset/test/' + row
+        f1 = path_to_dataset + '/train2017/' + row
+        f2 = path_to_dataset + '/my_dataset/test/' + row
         shutil.copyfile(f1, f2)
 
     print('zero test file {} / {}'.format(len(test_im), len(good_images_path)))
@@ -92,8 +92,8 @@ def make_file(p):
     good_images_path = list(set(good_images_path))
 
     for row in good_images_path:
-        f1 = '/media/alex/DAtA2/Datasets/coco/train2017/' + row
-        f2 = '/media/alex/DAtA2/Datasets/coco/my_dataset/train/' + row
+        f1 = path_to_dataset + '/train2017/' + row
+        f2 = path_to_dataset + '/my_dataset/train/' + row
         shutil.copyfile(f1, f2)
 
     print('zero train file {} / {}'.format(len(train_im), len(good_images_path)))
