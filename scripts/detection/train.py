@@ -31,7 +31,7 @@ def get_transform():
 
 def train_model(pathtoimg, pathtolabelstrain,
                 pathtoimgval, pathtolabelsval,
-                device, num_epochs=5, pretrain=True, use_val_test=True):
+                device, num_epochs=5, pretrain=True, use_val_test=True, premodel=None):
     images_train, annotations_train = prepare_items_od(pathtoimg, pathtolabelstrain)
     write_to_log('in train {} samples'.format(len(set(images_train))))
     ds0 = Dataset_objdetect(pathtoimg, images_train, annotations_train, transforms=get_transform())
@@ -41,7 +41,10 @@ def train_model(pathtoimg, pathtolabelstrain,
     best_model = None
     best_mape = 0
 
-    model = get_model_instance_segmentation(num_classes, pretrain)
+    if premodel is None:
+        model = get_model_instance_segmentation(num_classes, pretrain)
+    else:
+        model = premodel
     model.to(device)
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.Adam(params, lr=1e-4)
@@ -62,7 +65,7 @@ def train_model(pathtoimg, pathtolabelstrain,
         mape = outval['mAP(0.5:0.95)']
         if best_mape < mape:
             best_mape = mape
-            write_to_log('besr val mape {}'.format(best_mape))
+            write_to_log('best val mape {}'.format(best_mape))
         best_model = copy.deepcopy(model)
     if ds0.create_dataset:
         os.remove('../../data/'+ds0.name+'.hdf5')
@@ -154,8 +157,8 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
 def train_api(pathtoimg, pathtolabels,
               pathtoimgval, pathtolabelsval,
               add=100, device_rest='0',
-              path_model=None, batch_unlabeled=-1, pretrain=True,
-              save_model=False, use_val_test=True):
+              path_model='', batch_unlabeled=-1, pretrain=True,
+              save_model=False, use_val_test=True, retrain=False):
     device = f"cuda:{device_rest}" if torch.cuda.is_available() else "cpu"
     path_do_dir_model = '/weight'
     write_to_log(device)
@@ -163,16 +166,26 @@ def train_api(pathtoimg, pathtolabels,
     # print('curr dir{}'.format(os.path.curdir))
     all_img = os.listdir(pathtoimg)
     images, _ = prepare_items_od(pathtoimg, pathtolabels)
-    if path_model is None:
+    if path_model == '':
         write_to_log('start train model')
         model0 = train_model(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval,
                              device, num_epochs=20, pretrain=pretrain, use_val_test=use_val_test)
+    elif retrain:
+        write_to_log('load and train model')
+        if os.path.exists(path_model):
+            premod = torch.load(path_model)
+            model0 = train_model(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval,
+                                 device, num_epochs=20, pretrain=pretrain, use_val_test=use_val_test,
+                                 premodel=premod)
+        else:
+            return {'info': 'weight not exist'}
+
     else:
         write_to_log('load model')
         if os.path.exists(path_model):
             model0 = torch.load(path_model)
         else:
-            return {'data': [], 'info': 'weight not exists'}
+            return {'info': 'weight not exist'}
 
     unlabeled_data = list(set(all_img) - set([x[0] for x in images]))
     if batch_unlabeled > 0:

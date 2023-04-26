@@ -9,6 +9,8 @@ import numpy as np
 import yaml
 import os
 import uuid
+from scripts.detection.unit import write_to_log
+
 
 def get_transform():
     transforms = [t.ToTensor()]
@@ -18,18 +20,35 @@ def get_transform():
 def eval(path_to_img_train, path_to_labels_train,
          path_to_img_val, path_to_labels_val,
          path_to_labels_test, path_to_img_test,
-         device_rest, save_model, pretrain=True, model=None):
+         device_rest, save_model, pretrain=True, path_model='', retrain=False):
 
     device = f"cuda:{device_rest}" if torch.cuda.is_available() else "cpu"
     path_do_dir_model = '/weight'
 
-    if model is None:
+    if path_model == '':
+        write_to_log('start train model')
         model0 = train_model(path_to_img_train, path_to_labels_train,
                              path_to_img_val, path_to_labels_val,
                              device,
                              num_epochs=20, pretrain=pretrain, use_val_test=True)
+    elif retrain:
+        write_to_log('load and train model')
+        if os.path.exists(path_model):
+            premod = torch.load(path_model)
+            model0 = train_model(path_to_img_train, path_to_labels_train,
+                                 path_to_img_val, path_to_labels_val,
+                                 device, num_epochs=20, pretrain=pretrain, use_val_test=True,
+                                 premodel=premod)
+        else:
+            return {'info': 'weight not exist'}
+
     else:
-        model0 = model
+        write_to_log('load model')
+        if os.path.exists(path_model):
+            model0 = torch.load(path_model)
+        else:
+            return {'info': 'weight not exist'}
+
 
     images_test, annotations_test = prepare_items_od(path_to_labels_test, path_to_img_test)
     dataset_test = Dataset_objdetect(path_to_labels_test, images_test, annotations_test, get_transform(), name='test')
