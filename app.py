@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from flask_restful import Api, Resource, reqparse
 from scripts.detection.train import train_api
 from scripts.detection.eval import eval
+from scripts.detection.unit import write_to_log
 
 
 app = Flask(__name__)
@@ -11,7 +12,7 @@ api = Api(app)
 class ActiveLearning(Resource):
     @staticmethod
     def get():
-        print('start al')
+        write_to_log('start al')
         # номер гпу, 0 или 1...
         device = reqparse.request.args['gpu']
         # сколько семплов вернуть для разметки
@@ -58,6 +59,7 @@ class ActiveLearning(Resource):
 class Evaluate(Resource):
     @staticmethod
     def get():
+        write_to_log('start mape')
         device = reqparse.request.args['gpu']
         path_to_labels_train = reqparse.request.args['path_to_labels_train']
         path_to_img_train = reqparse.request.args['path_to_img_train']
@@ -109,11 +111,3 @@ api.add_resource(Evaluate, '/eval')
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', debug=True)
-    # device = 'gpu'
-    # add = 10000
-    # path_to_labels_train = '/home/neptun/PycharmProjects/datasets/coco/labelstrain'
-    # path_to_img_train = '/home/neptun/PycharmProjects/datasets/coco/train2017'
-    # path_to_labels_val = '/home/neptun/PycharmProjects/datasets/coco/labelsval'
-    # path_to_img_val = '/home/neptun/PycharmProjects/datasets/coco/val2017'
-    #
-    # eval(path_to_labels_train, path_to_img_train, path_to_labels_val, path_to_img_val, device)
