@@ -42,7 +42,7 @@ class ActiveLearning(Resource):
 
         pretrain = True if pretrain == 'T' else False
         save_model = True if save_model == 'T' else False
-        path_model = None if path_model == '' else path_model
+        # path_model = None if path_model == '' else path_model
         use_val_test = True if use_val_test == 'T' else False
 
         # сеть указанную пользователем можно переобучить на трейновских данных, или нет

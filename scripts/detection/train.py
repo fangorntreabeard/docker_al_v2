@@ -52,20 +52,14 @@ def train_model(pathtoimg, pathtolabelstrain,
         # print('epoch {}'.format(epoch+1))
         train_one_epoch(model, optimizer, train_dataloader, device, epoch, print_freq=100)
         if use_val_test:
-            outval = mAP(model,
-                         pathtolabelstrain, pathtoimg,
-                         pathtolabelsval, pathtoimgval,
-                         device)
+            outval = mAP(model, pathtolabelsval, pathtoimgval, device)
         else:
-            outval = mAP(model,
-                         pathtolabelstrain, pathtoimg,
-                         pathtolabelstrain, pathtoimg,
-                         device)
+            outval = mAP(model, pathtolabelstrain, pathtoimg, device)
 
         mape = outval['mAP(0.5:0.95)']
         if best_mape < mape:
             best_mape = mape
-            write_to_log('best val mape {}'.format(best_mape))
+            write_to_log('{}. best val mape {}'.format(epoch+1, best_mape))
         best_model = copy.deepcopy(model)
     if ds0.create_dataset:
         os.remove('../../data/'+ds0.name+'.hdf5')
@@ -137,7 +131,7 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
 
     # temp = []
     p_min = 0
-    p_max = 0.5
+    p_max = 0.4
 
     pp = [(row[0], row[1]) for row in a if p_min <= row[1] < p_max]
     temp = random.sample(pp, k=min(add, len(pp)))
@@ -201,14 +195,7 @@ def train_api(pathtoimg, pathtolabels,
     else:
         return {'data': add_to_label_items}
 
-def mAP(model, pathtolabelstrain, pathtoimgtrain, pathtolabelsval, pathtoimgval, devicerest):
-    if model is None:
-        write_to_log('train model in mape')
-        model0 = train_model(pathtoimgtrain, pathtolabelstrain, pathtoimgval, pathtolabelsval,
-                             devicerest, num_epochs=20, use_val_test=True)
-    else:
-        model0 = model
-
+def mAP(model0, pathtolabelsval, pathtoimgval, devicerest):
     images_test, annotations_test = prepare_items_od(pathtoimgval, pathtolabelsval)
     dataset_test = Dataset_objdetect(pathtoimgval, images_test, annotations_test, get_transform(), name='val')
     data_loader_test = DataLoader(dataset_test, batch_size=32, shuffle=False, collate_fn=utils.collate_fn)

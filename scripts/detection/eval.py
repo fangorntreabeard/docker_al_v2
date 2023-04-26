@@ -24,6 +24,8 @@ def eval(path_to_img_train, path_to_labels_train,
 
     device = f"cuda:{device_rest}" if torch.cuda.is_available() else "cpu"
     path_do_dir_model = '/weight'
+    write_to_log('eval')
+    write_to_log(device)
 
     if path_model == '':
         write_to_log('start train model')
