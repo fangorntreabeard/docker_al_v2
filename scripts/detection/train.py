@@ -21,8 +21,7 @@ from torchvision.models.detection.faster_rcnn import GeneralizedRCNNTransform
 from PIL import Image
 import re
 import uuid
-
-
+from scripts.detection.unit import write_to_log
 
 
 def get_transform():
@@ -34,7 +33,7 @@ def train_model(pathtoimg, pathtolabelstrain,
                 pathtoimgval, pathtolabelsval,
                 device, num_epochs=5, pretrain=True, use_val_test=True):
     images_train, annotations_train = prepare_items_od(pathtoimg, pathtolabelstrain)
-    print('in train {} samples'.format(len(set(images_train))))
+    write_to_log('in train {} samples'.format(len(set(images_train))))
     ds0 = Dataset_objdetect(pathtoimg, images_train, annotations_train, transforms=get_transform())
     train_dataloader = DataLoader(ds0, batch_size=8, shuffle=True, collate_fn=utils.collate_fn)
 
@@ -63,7 +62,7 @@ def train_model(pathtoimg, pathtolabelstrain,
         mape = outval['mAP(0.5:0.95)']
         if best_mape < mape:
             best_mape = mape
-            # print('besr val mape {}'.format(best_mape))
+            write_to_log('besr val mape {}'.format(best_mape))
         best_model = copy.deepcopy(model)
     if ds0.create_dataset:
         os.remove('../../data/'+ds0.name+'.hdf5')
@@ -121,25 +120,6 @@ def find_out_net(model, device, pathtoimg, unlabeled_data, func):
 
     return indexs, values, bboxes
 
-def save_bbox_disk(bbox, pathtoimg, path_to_boxes, unlabeled_data):
-    for i in os.listdir(path_to_boxes):
-        os.remove(os.path.join(path_to_boxes, i))
-
-    for i, name in enumerate(unlabeled_data):
-        img = Image.open(os.path.join(pathtoimg, name))
-        img = img.resize((224, 224))
-        img = np.array(img)
-        for j, bb in enumerate(bbox[i]):
-            if len(bb) > 0:
-                bb = [int(x) for x in bb]
-                if (bb[2] > bb[0] and bb[3] > bb[1]) and \
-                        (0.2 < (bb[2] - bb[0])/(bb[3] - bb[1]) < 5) and \
-                        ((bb[2] - bb[0] > 20) or (bb[3] - bb[1] > 20)):
-                    d = img[bb[1]:bb[3], bb[0]:bb[2]]
-                    imgs = Image.fromarray(d)
-                    imgs.save(os.path.join(path_to_boxes, '{}_{}.jpg'.format(name.split('.')[0], j)))
-
-
 def mean(x):
     return sum(x) / len(x)
 
@@ -178,22 +158,28 @@ def train_api(pathtoimg, pathtolabels,
               save_model=False, use_val_test=True):
     device = f"cuda:{device_rest}" if torch.cuda.is_available() else "cpu"
     path_do_dir_model = '/weight'
+    write_to_log(device)
+
     # print('curr dir{}'.format(os.path.curdir))
     all_img = os.listdir(pathtoimg)
     images, _ = prepare_items_od(pathtoimg, pathtolabels)
     if path_model is None:
-        print('start train zero model')
+        write_to_log('start train model')
         model0 = train_model(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval,
                              device, num_epochs=20, pretrain=pretrain, use_val_test=use_val_test)
     else:
-        model0 = torch.load(path_model)
+        write_to_log('load model')
+        if os.path.exists(path_model):
+            model0 = torch.load(path_model)
+        else:
+            return {'data': [], 'info': 'weight not exists'}
 
     unlabeled_data = list(set(all_img) - set([x[0] for x in images]))
     if batch_unlabeled > 0:
         unlabeled_data = random.sample(unlabeled_data, k=min(batch_unlabeled, len(unlabeled_data)))
 
     # methode = 'uncertainty'
-    print('start uncertainty', add)
+    write_to_log('start uncertainty {}'.format(add))
     add_to_label_items = sampling_uncertainty(model0, pathtoimg, unlabeled_data, add, device)
     if save_model:
         path_model = os.path.join(path_do_dir_model, '{}.pth'.format(uuid.uuid4()))
@@ -204,6 +190,7 @@ def train_api(pathtoimg, pathtolabels,
 
 def mAP(model, pathtolabelstrain, pathtoimgtrain, pathtolabelsval, pathtoimgval, devicerest):
     if model is None:
+        write_to_log('train model in mape')
         model0 = train_model(pathtoimgtrain, pathtolabelstrain, pathtoimgval, pathtolabelsval,
                              devicerest, num_epochs=20, use_val_test=True)
     else:

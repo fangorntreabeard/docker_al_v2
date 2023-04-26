@@ -10,6 +10,7 @@ from skimage import io
 import numpy as np
 import h5py
 import uuid
+import datetime
 
 mean = [0.4914, 0.4822, 0.4465]
 std = [0.2470, 0.2435, 0.2616]
@@ -231,6 +232,9 @@ class Dataset_objdetect(Dataset):
     def __len__(self):
         return self.count
 
+def write_to_log(txt):
+    with open('/history.txt', 'a') as file:
+        file.write('{}\t{}\n'.format(datetime.datetime.now(), txt))
 
 if __name__ == '__main__':
     pass
