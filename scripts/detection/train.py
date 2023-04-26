@@ -139,7 +139,7 @@ def mean(x):
 def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
     # min, max, mean
     # func = mean
-    indexs, values, _ = find_out_net(model, device, pathtoimg, unlabeled_data, func=mean)
+    indexs, values, _ = find_out_net(model, device, pathtoimg, unlabeled_data, func=min)
 
     # out_name = []
     out_dict = {k: v for k, v in zip(indexs, values)}
