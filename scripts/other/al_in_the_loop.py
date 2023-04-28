@@ -23,7 +23,7 @@ def al(add, path_model=''):
         'add': add,
         'batch_unlabeled': -1,
         'use_val_test_in_train': 'T',
-        'function_for_boxes_on_one_image': 'min',
+        'function_for_boxes_on_one_image': 'mean',
         'quantile_min': 0,
         'quantile_max': 0.5,
 

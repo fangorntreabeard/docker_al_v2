@@ -125,9 +125,16 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device, selectio
     # min, max, mean
     # func = mean
     if selection_function in ['min', 'max', 'mean']:
-        indexs, values, _ = find_out_net(model, device, pathtoimg, unlabeled_data, func=selection_function)
+        if selection_function == 'min':
+            fun = min
+        elif selection_function == 'max':
+            fun = max
+        else:
+            fun = mean
     else:
-        indexs, values, _ = find_out_net(model, device, pathtoimg, unlabeled_data, func=mean)
+        fun = mean
+
+    indexs, values, _ = find_out_net(model, device, pathtoimg, unlabeled_data, func=fun)
 
     # out_name = []
     out_dict = {k: v for k, v in zip(indexs, values)}

@@ -17,7 +17,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              count: 2
+              count: 1
               capabilities: [ gpu ]
 networks:
   default:
