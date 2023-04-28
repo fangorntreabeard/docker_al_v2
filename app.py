@@ -56,8 +56,8 @@ class ActiveLearning(Resource):
 
         # в каком диапазоне уверенностей отбирать фотки.иногда нужно выбирать самые неуверенные, иногда
         # самые уверенные
-        quantile_min = reqparse.request.args['quantile_min']
-        quantile_max = reqparse.request.args['quantile_max']
+        quantile_min = float(reqparse.request.args['quantile_min'])
+        quantile_max = float(reqparse.request.args['quantile_max'])
 
         return make_train(path_to_img_train, path_to_labels_train,
                      path_to_img_val, path_to_labels_val,
