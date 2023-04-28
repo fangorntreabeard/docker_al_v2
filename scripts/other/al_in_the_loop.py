@@ -22,7 +22,11 @@ def al(add, path_model=''):
         'retrain_user_model': 'F',
         'add': add,
         'batch_unlabeled': -1,
-        'use_val_test_in_train': 'T'
+        'use_val_test_in_train': 'T',
+        'function_for_boxes_on_one_image': 'min',
+        'quantile_min': 0,
+        'quantile_max': 0.5,
+
     }
 
     querystring = parse.urlencode(params)
