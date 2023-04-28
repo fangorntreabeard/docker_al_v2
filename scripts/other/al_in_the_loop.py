@@ -23,9 +23,9 @@ def al(add, path_model=''):
         'add': add,
         'batch_unlabeled': -1,
         'use_val_test_in_train': 'T',
-        'function_for_boxes_on_one_image': 'mean',
+        'bbox_selection_policy': 'min',
         'quantile_min': 0,
-        'quantile_max': 0.5,
+        'quantile_max': 0.3,
 
     }
 
