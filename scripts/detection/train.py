@@ -120,18 +120,22 @@ def find_out_net(model, device, pathtoimg, unlabeled_data, func):
 def mean(x):
     return sum(x) / len(x)
 
-def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device):
+def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device, selection_function,
+                         quantile_min, quantile_max):
     # min, max, mean
     # func = mean
-    indexs, values, _ = find_out_net(model, device, pathtoimg, unlabeled_data, func=min)
+    if selection_function in ['min', 'max', 'mean']:
+        indexs, values, _ = find_out_net(model, device, pathtoimg, unlabeled_data, func=selection_function)
+    else:
+        indexs, values, _ = find_out_net(model, device, pathtoimg, unlabeled_data, func=mean)
 
     # out_name = []
     out_dict = {k: v for k, v in zip(indexs, values)}
     a = sorted(out_dict.items(), key=lambda x: x[1])
 
     # temp = []
-    p_min = 0
-    p_max = 0.4
+    p_min = quantile_min
+    p_max = quantile_max
 
     pp = [(row[0], row[1]) for row in a if p_min <= row[1] < p_max]
     temp = random.sample(pp, k=min(add, len(pp)))
@@ -152,7 +156,8 @@ def train_api(pathtoimg, pathtolabels,
               pathtoimgval, pathtolabelsval,
               add=100, device_rest='0',
               path_model='', batch_unlabeled=-1, pretrain=True,
-              save_model=False, use_val_test=True, retrain=False):
+              save_model=False, use_val_test=True, retrain=False, selection_function='min',
+              quantile_min=0, quantile_max=1):
     device = f"cuda:{device_rest}" if torch.cuda.is_available() else "cpu"
     path_do_dir_model = '/weight'
     write_to_log(device)
@@ -163,13 +168,13 @@ def train_api(pathtoimg, pathtolabels,
     if path_model == '':
         write_to_log('start train model')
         model0 = train_model(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval,
-                             device, num_epochs=20, pretrain=pretrain, use_val_test=use_val_test)
+                             device, num_epochs=30, pretrain=pretrain, use_val_test=use_val_test)
     elif retrain:
         write_to_log('load and train model')
         if os.path.exists(path_model):
             premod = torch.load(path_model)
             model0 = train_model(pathtoimg, pathtolabels, pathtoimgval, pathtolabelsval,
-                                 device, num_epochs=20, pretrain=pretrain, use_val_test=use_val_test,
+                                 device, num_epochs=30, pretrain=pretrain, use_val_test=use_val_test,
                                  premodel=premod)
         else:
             return {'info': 'weight not exist'}
@@ -187,7 +192,8 @@ def train_api(pathtoimg, pathtolabels,
 
     # methode = 'uncertainty'
     write_to_log('start uncertainty {}'.format(add))
-    add_to_label_items = sampling_uncertainty(model0, pathtoimg, unlabeled_data, add, device)
+    add_to_label_items = sampling_uncertainty(model0, pathtoimg, unlabeled_data, add, device, selection_function,
+                                              quantile_min, quantile_max)
     if save_model:
         path_model = os.path.join(path_do_dir_model, '{}.pth'.format(uuid.uuid4()))
         torch.save(model0, path_model)

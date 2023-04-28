@@ -50,10 +50,19 @@ class ActiveLearning(Resource):
         retrain = reqparse.request.args['retrain_user_model']
         retrain = True if retrain == 'T' else False
 
+        # как обрабатывать несколько боксов на одной фотке.можно выбрать самую низкую уверенность min, самую высокую
+        # max или средню по фотке mean
+        selection_function = reqparse.request.args['function_for_boxes_on_one_image']
+
+        # в каком диапазоне уверенностей отбирать фотки.иногда нужно выбирать самые неуверенные, иногда
+        # самые уверенные
+        quantile_min = reqparse.request.args['quantile_min']
+        quantile_max = reqparse.request.args['quantile_max']
+
         return make_train(path_to_img_train, path_to_labels_train,
                      path_to_img_val, path_to_labels_val,
                      add, device, path_model, batch_unlabeled, pretrain,
-                     save_model, use_val_test, retrain)
+                     save_model, use_val_test, retrain, selection_function, quantile_min, quantile_max)
 
 
 class Evaluate(Resource):
@@ -87,13 +96,15 @@ class Evaluate(Resource):
 
 
 def make_train(path_to_img_train, path_to_labels_train,
-                     path_to_img_val, path_to_labels_val,
-                     add, device, path_model, batch_unlabeled, pretrain,
-                     save_model, use_val_test, retrain):
+               path_to_img_val, path_to_labels_val,
+               add, device, path_model, batch_unlabeled, pretrain,
+               save_model, use_val_test, retrain, selection_function,
+               quantile_min, quantile_max):
     out = train_api(path_to_img_train, path_to_labels_train,
-                     path_to_img_val, path_to_labels_val,
-                     add, device, path_model, batch_unlabeled, pretrain,
-                     save_model, use_val_test, retrain)
+                    path_to_img_val, path_to_labels_val,
+                    add, device, path_model, batch_unlabeled, pretrain,
+                    save_model, use_val_test, retrain, selection_function,
+                    quantile_min, quantile_max)
     return jsonify(out)
 
 

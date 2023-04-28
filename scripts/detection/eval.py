@@ -32,14 +32,14 @@ def eval(path_to_img_train, path_to_labels_train,
         model0 = train_model(path_to_img_train, path_to_labels_train,
                              path_to_img_val, path_to_labels_val,
                              device,
-                             num_epochs=20, pretrain=pretrain, use_val_test=True)
+                             num_epochs=30, pretrain=pretrain, use_val_test=True)
     elif retrain:
         write_to_log('load and train model')
         if os.path.exists(path_model):
             premod = torch.load(path_model)
             model0 = train_model(path_to_img_train, path_to_labels_train,
                                  path_to_img_val, path_to_labels_val,
-                                 device, num_epochs=20, pretrain=pretrain, use_val_test=True,
+                                 device, num_epochs=30, pretrain=pretrain, use_val_test=True,
                                  premodel=premod)
         else:
             return {'info': 'weight not exist'}
