@@ -141,10 +141,10 @@ def sampling_uncertainty(model, pathtoimg, unlabeled_data, add, device, selectio
     a = sorted(out_dict.items(), key=lambda x: x[1])
 
     # temp = []
-    q_min = np.quantile(np.array(values), quantile_min)
-    q_max = np.quantile(np.array(values), quantile_max)
+    # q_min = np.quantile(np.array(values), quantile_min)
+    # q_max = np.quantile(np.array(values), quantile_max)
 
-    pp = [(row[0], row[1]) for row in a if q_min <= row[1] < q_max]
+    pp = [(row[0], row[1]) for row in a if quantile_min <= row[1] < quantile_max]
     temp = random.sample(pp, k=min(add, len(pp)))
     # for ii in range(5):
     #     p_min = 0.5 + ii * 0.1
